@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rangga Febrianto | Portfolio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="top-nav">
+      <div class="nav-content">
+        <nav>
+          <a href="#home">Home</a>
+          <a href="#about">About</a>
+          <a href="#portfolio">Portfolio</a>
+          <a href="#contact">Contact</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero reveal" id="home">
+        <div class="social-rail">
+          <a class="social-link" href="https://instagram.com/rangshar_" target="_blank" rel="noopener">instagram</a>
+          <div class="rail-line"></div>
+          <span class="rail-label">follow me</span>
+        </div>
+        <div class="hero-copy">
+          <p class="eyebrow">Hello,</p>
+          <h1>I Am Rangga Febrianto</h1>
+          <p class="role">Menciptakan Solusi Digital & Visual dari Berbagai Sudut</p>
+          <p class="lede">Saya adalah kreator yang mengerjakan berbagai jenis proyek.</p>
+          <p class="lede">Mulai dari desain visual, pengembangan website, hingga eksperimen digital dengan fokus pada kualitas, fungsi, dan pengalaman pengguna.</p>
+          <div class="cta-row">
+            <a class="btn primary" href="#contact">Let's talk</a>
+          </div>
+        </div>
+        <div class="hero-visual">
+          <div class="hero-blob">
+            <img src="images/hero/hero.png" alt="Portrait of Rangga Febrianto">
+          </div>
+        </div>
+      </section>
+
+      <section class="about reveal" id="about">
+        <div class="about-visual">
+          <div class="photo-frame">
+            <img src="images/about%20me/ainulllm%20(279%20of%20929)%20(1).jpg" alt="About me">
+          </div>
+        </div>
+        <div class="about-copy">
+          <p class="section-kicker">About me</p>
+          <h2>Building usable, beautiful products.</h2>
+          <p>Saya adalah individu yang tertarik pada berbagai bidang kreatif dan teknologi. Saya senang mengeksplorasi ide baru, mempelajari hal baru, dan mengubah konsep menjadi proyek nyata.</p>
+          <div class="cta-row">
+            <a class="btn primary" href="#contact">Hire Me</a>
+            <a class="btn ghost" href="#portfolio">View Portfolio</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="specialties reveal" id="blog">
+        <p class="section-kicker">Specializing In</p>
+        <h3>Designing for impact, grounded in research.</h3>
+        <div class="card-grid">
+          <article class="card reveal" style="--reveal-delay: 60ms">
+            <div class="pill">Design</div>
+            <h4>Graphic Design</h4>
+            <p>Saya menciptakan desain visual yang kuat dan konsisten untuk memperkuat identitas brand. Setiap karya dirancang agar menarik perhatian dan mudah diingat.</p>
+          </article>
+          <article class="card reveal" style="--reveal-delay: 120ms">
+            <div class="pill">Photo</div>
+            <h4>Fotografi & Visual Content</h4>
+            <p>Saya menghasilkan visual yang bersih, estetik, dan profesional. Konten siap digunakan untuk branding dan kebutuhan digital.</p>
+          </article>
+          <article class="card reveal" style="--reveal-delay: 180ms">
+            <div class="pill">Web</div>
+            <h4>Web Development</h4>
+            <p>Saya membangun website yang modern, responsif, dan fungsional. Menggabungkan desain visual dan performa yang optimal.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="portfolio reveal" id="portfolio">
+        <p class="section-kicker">Portfolio</p>
+        <h3>A selection of recent work.</h3>
+        <div class="portfolio-grid">
+          <a class="folio-card reveal" style="--reveal-delay: 60ms" href="portfolio-graphic.html">
+            <img src="images/portofolio/design/kampus/3.jpg" alt="Graphic design boards">
+            <span>Graphic Design</span>
+          </a>
+          <a class="folio-card reveal" style="--reveal-delay: 120ms" href="portfolio-photo.html">
+            <img src="images/portofolio/fotografi/11.jpg" alt="Photography scene in desert">
+            <span>Fotografi & Visual Content</span>
+          </a>
+          <a class="folio-card reveal" style="--reveal-delay: 180ms" href="portfolio-web.html">
+            <img src="images/portofolio/web/Screenshot%202025-12-26%20180917.png" alt="Web development workspace">
+            <span>Web Development</span>
+          </a>
+        </div>
+      </section>
+
+      <section class="cta reveal" id="contact">
+        <div class="cta-inner">
+          <div>
+            <p class="section-kicker">Hire me?</p>
+            <h3>Contact me</h3>
+          </div>
+          <a class="btn ghost" href="https://wa.me/6285648494373" target="_blank" rel="noopener">Say hello</a>
+        </div>
+      </section>
+    </main>
+  </div>
+  <button class="back-to-top" type="button" aria-label="Scroll to top">↑</button>
+  <script>
+    (() => {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('show');
+          } else {
+            entry.target.classList.remove('show');
+          }
+        });
+      }, { threshold: 0.15 });
+
+      document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+
+      const backToTop = document.querySelector('.back-to-top');
+      if (backToTop) {
+        backToTop.addEventListener('click', () => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        const toggleBackToTop = () => {
+          if (window.scrollY > 240) {
+            backToTop.classList.add('show');
+          } else {
+            backToTop.classList.remove('show');
+          }
+        };
+
+        toggleBackToTop();
+        window.addEventListener('scroll', toggleBackToTop);
+      }
+    })();
+  </script>
+</body>
+</html>

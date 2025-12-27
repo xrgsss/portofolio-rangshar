@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fotografi & Visual Content</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="top-nav">
+      <div class="nav-content">
+        <nav>
+          <a href="index.html#home">Home</a>
+          <a href="index.html#about">About</a>
+          <a href="index.html#portfolio">Portfolio</a>
+          <a href="index.html#contact">Contact</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="gallery-hero reveal">
+        <p class="section-kicker">Portfolio</p>
+        <h1>Fotografi & Visual Content</h1>
+        <p>Galeri foto dan konten visual untuk kampanye sosial, lifestyle, dan brand storytelling.</p>
+      </section>
+
+      <section class="reveal">
+        <div class="gallery-grid">
+          <div class="gallery-item reveal" style="--reveal-delay: 60ms">
+            <img src="images/portofolio/fotografi/11.jpg" alt="Travel desert">
+            <span>Travel & landscape</span>
+          </div>
+          <div class="gallery-item reveal" style="--reveal-delay: 120ms">
+            <img src="images/portofolio/fotografi/2.jpg" alt="Portrait session">
+            <span>Portrait session</span>
+          </div>
+          <div class="gallery-item reveal" style="--reveal-delay: 180ms">
+            <img src="images/portofolio/fotografi/22.jpg" alt="Coffee shop story">
+            <span>Coffee shop story</span>
+          </div>
+          <div class="gallery-item reveal" style="--reveal-delay: 240ms">
+            <img src="images/portofolio/fotografi/4.jpg" alt="Food photography">
+            <span>Food photography</span>
+          </div>
+          <div class="gallery-item reveal" style="--reveal-delay: 300ms">
+            <img src="images/portofolio/fotografi/444.jpg" alt="Product shoot">
+            <span>Product shoot</span>
+          </div>
+          <div class="gallery-item reveal" style="--reveal-delay: 360ms">
+            <img src="images/portofolio/fotografi/6.jpg" alt="Lifestyle set">
+            <span>Lifestyle set</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <button class="back-to-top" type="button" aria-label="Scroll to top">↑</button>
+
+    <div class="lightbox" id="lightbox">
+      <div class="lightbox-backdrop"></div>
+      <div class="lightbox-content">
+        <button class="lightbox-close" aria-label="Close">×</button>
+        <img src="" alt="Preview">
+      </div>
+    </div>
+  </div>
+  <script>
+    (function() {
+      const items = document.querySelectorAll('.gallery-item img');
+      const lightbox = document.getElementById('lightbox');
+      const lightboxImg = lightbox.querySelector('img');
+      const closeBtn = lightbox.querySelector('.lightbox-close');
+      const backdrop = lightbox.querySelector('.lightbox-backdrop');
+
+      const open = (src, alt) => {
+        lightboxImg.src = src;
+        lightboxImg.alt = alt || 'Preview';
+        lightbox.classList.add('open');
+      };
+
+      const close = () => {
+        lightbox.classList.remove('open');
+        lightboxImg.src = '';
+      };
+
+      items.forEach(img => {
+        img.addEventListener('click', () => open(img.src, img.alt));
+      });
+
+      closeBtn.addEventListener('click', close);
+      backdrop.addEventListener('click', close);
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') close();
+      });
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('show');
+          } else {
+            entry.target.classList.remove('show');
+          }
+        });
+      }, { threshold: 0.15 });
+
+      document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+
+      const backToTop = document.querySelector('.back-to-top');
+      if (backToTop) {
+        backToTop.addEventListener('click', () => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        const toggleBackToTop = () => {
+          if (window.scrollY > 240) {
+            backToTop.classList.add('show');
+          } else {
+            backToTop.classList.remove('show');
+          }
+        };
+
+        toggleBackToTop();
+        window.addEventListener('scroll', toggleBackToTop);
+      }
+    })();
+  </script>
+</body>
+</html>
