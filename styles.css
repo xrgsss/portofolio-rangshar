@@ -458,6 +458,20 @@ section {
   width: 100%;
 }
 
+.cta-social {
+  width: min(900px, 92vw);
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cta-social .section-kicker {
+  margin: 0;
+  color: var(--muted);
+}
+
 .social-footer {
   width: min(900px, 92vw);
   margin: 0 auto;
@@ -501,17 +515,16 @@ section {
   box-shadow: 0 20px 50px rgba(76, 62, 155, 0.35);
 }
 
-.cta .section-kicker {
+.cta-inner .section-kicker {
   color: #fff;
 }
 
-.cta .lede {
+.cta-inner .lede {
   margin: 8px 0 0;
   font-weight: 700;
   letter-spacing: 0.4px;
 }
 
-.cta-top,
 .cta-main {
   display: flex;
   align-items: center;
@@ -533,18 +546,29 @@ section {
 }
 
 .social-inline a {
-  color: #fff;
+  color: var(--primary);
   text-decoration: none;
   padding: 8px 12px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(109, 75, 255, 0.18);
+  background: rgba(109, 75, 255, 0.08);
   font-weight: 700;
   letter-spacing: 0.2px;
   transition: background 160ms ease, border-color 160ms ease;
 }
 
 .social-inline a:hover {
+  background: rgba(109, 75, 255, 0.12);
+  border-color: rgba(109, 75, 255, 0.26);
+}
+
+.cta-inner .social-inline a {
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.cta-inner .social-inline a:hover {
   background: rgba(255, 255, 255, 0.18);
   border-color: rgba(255, 255, 255, 0.28);
 }
@@ -844,6 +868,13 @@ h3 {
     justify-self: center;
   }
 
+  .cta-social {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 0 4px;
+  }
+
   .cta-inner {
     padding: 26px 28px;
     gap: 14px;
@@ -897,11 +928,17 @@ h3 {
     gap: 12px;
   }
 
-  .cta-top,
   .cta-main {
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
+  }
+
+  .cta-social {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 0 2px;
   }
 
   .social-footer {
