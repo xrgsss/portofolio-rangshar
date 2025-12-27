@@ -806,8 +806,16 @@ h3 {
   }
 
   .cta-inner {
-    flex-direction: column;
-    text-align: center;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    text-align: left;
+    padding: 26px 28px;
+    gap: 12px;
+  }
+
+  .cta-inner > div {
+    text-align: left;
   }
 
   .back-to-top {
@@ -851,6 +859,23 @@ h3 {
   .cta-row {
     flex-wrap: wrap;
     justify-content: center;
+  }
+
+  .cta-inner {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    text-align: left;
+    padding: 22px 24px;
+    gap: 12px;
+  }
+
+  .cta-inner > div {
+    text-align: left;
+  }
+
+  .social-footer {
+    padding: 24px 0 36px;
   }
 
   .back-to-top {
