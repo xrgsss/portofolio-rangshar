@@ -85,11 +85,7 @@ body::after {
 }
 
 .top-nav {
-  position: relative;
-  z-index: 20;
-  pointer-events: auto;
-  background: transparent;
-  box-shadow: none;
+  display: none;
 }
 
 .top-nav::before {
@@ -137,7 +133,7 @@ section {
   grid-template-columns: 1.1fr 0.9fr;
   align-items: center;
   gap: 40px;
-  padding: 160px 40px 80px;
+  padding: 64px 24px 56px;
 }
 
 .hero::after {
@@ -183,6 +179,37 @@ section {
 .rail-label {
   font-weight: 600;
   letter-spacing: 1px;
+}
+
+.hero-links,
+.page-links {
+  display: flex;
+  gap: 18px;
+  justify-content: center;
+  align-items: center;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.2px;
+}
+
+.hero-links a,
+.page-links a {
+  color: var(--text);
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 12px;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.hero-links a:hover,
+.page-links a:hover {
+  color: var(--primary);
+  background: rgba(109, 75, 255, 0.08);
+}
+
+.hero-links {
+  grid-column: 1 / -1;
+  margin: -8px 0 4px;
 }
 
 .hero-copy h1 {
@@ -431,6 +458,34 @@ section {
   width: 100%;
 }
 
+.social-footer {
+  width: min(900px, 92vw);
+  margin: 0 auto;
+  padding: 32px 0 48px;
+  text-align: center;
+}
+
+.social-list {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  font-weight: 700;
+}
+
+.social-list a {
+  color: var(--primary);
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: rgba(109, 75, 255, 0.08);
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.social-list a:hover {
+  background: rgba(109, 75, 255, 0.14);
+  color: var(--primary-2);
+}
+
 .cta-inner {
   width: min(900px, 92vw);
   margin: 0 auto;
@@ -534,7 +589,7 @@ section {
 }
 
 .gallery-hero {
-  padding: 210px 24px 36px;
+  padding: 8px 12px 10px;
   text-align: center;
   width: min(1100px, 92vw);
   margin: 0 auto 10px;
@@ -725,7 +780,7 @@ h3 {
   }
 
   .hero {
-    padding: 96px 18px 60px;
+    padding: 44px 14px 44px;
   }
 
   .hero-visual {
@@ -782,7 +837,7 @@ h3 {
   }
 
   .hero {
-    padding: 88px 16px 48px;
+    padding: 36px 12px 38px;
   }
 
   .hero-blob {
