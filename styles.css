@@ -494,9 +494,10 @@ section {
   border-radius: 24px;
   padding: 32px 40px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: stretch;
   gap: 18px;
+  text-align: left;
   box-shadow: 0 20px 50px rgba(76, 62, 155, 0.35);
 }
 
@@ -508,6 +509,44 @@ section {
   margin: 8px 0 0;
   font-weight: 700;
   letter-spacing: 0.4px;
+}
+
+.cta-top,
+.cta-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.cta-main h3 {
+  margin: 6px 0 0;
+  color: #fff;
+}
+
+.social-inline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.social-inline a {
+  color: #fff;
+  text-decoration: none;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.12);
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+
+.social-inline a:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.28);
 }
 
 .btn {
@@ -806,16 +845,8 @@ h3 {
   }
 
   .cta-inner {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    text-align: left;
     padding: 26px 28px;
-    gap: 12px;
-  }
-
-  .cta-inner > div {
-    text-align: left;
+    gap: 14px;
   }
 
   .back-to-top {
@@ -862,16 +893,15 @@ h3 {
   }
 
   .cta-inner {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    text-align: left;
     padding: 22px 24px;
     gap: 12px;
   }
 
-  .cta-inner > div {
-    text-align: left;
+  .cta-top,
+  .cta-main {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
   }
 
   .social-footer {
