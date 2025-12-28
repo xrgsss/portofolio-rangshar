@@ -682,6 +682,8 @@ section {
   width: min(1100px, 92vw);
   margin: 0 auto 12px;
   padding: 8px 0 14px;
+  content-visibility: auto;
+  contain-intrinsic-size: 1200px;
 }
 
 .gallery-section h3 {
@@ -695,7 +697,7 @@ section {
   background: var(--card);
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 10px 25px rgba(62, 46, 120, 0.12);
+  box-shadow: 0 6px 18px rgba(62, 46, 120, 0.12);
   position: relative;
   cursor: zoom-in;
   text-decoration: none;
