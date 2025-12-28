@@ -232,6 +232,12 @@
   </div>
   <script>
     (function() {
+      // Defer decoding and loading so the long gallery doesn't block scrolling
+      document.querySelectorAll('.gallery-item img').forEach((img) => {
+        if (!img.hasAttribute('loading')) img.loading = 'lazy';
+        img.decoding = 'async';
+      });
+
       const items = document.querySelectorAll('.gallery-item img');
       const lightbox = document.getElementById('lightbox');
       const lightboxImg = lightbox.querySelector('img');
