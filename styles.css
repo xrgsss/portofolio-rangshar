@@ -308,8 +308,6 @@ section {
   place-items: center;
   overflow: hidden;
   box-shadow: 0 30px 80px rgba(76, 62, 155, 0.35);
-  animation: hero-popup-loop 3.2s ease-in-out infinite;
-  will-change: transform, box-shadow;
 }
 
 .hero-blob img {
@@ -317,23 +315,6 @@ section {
   height: 98%;
   object-fit: cover;
   border-radius: 40% 60% 50% 50%;
-}
-
-@keyframes hero-popup-loop {
-  0%, 100% {
-    transform: translateY(0) scale(1);
-    box-shadow: 0 30px 80px rgba(76, 62, 155, 0.35);
-  }
-  50% {
-    transform: translateY(-16px) scale(1.02);
-    box-shadow: 0 40px 96px rgba(76, 62, 155, 0.42);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hero-blob {
-    animation: none;
-  }
 }
 
 .section-kicker {
