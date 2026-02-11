@@ -1052,9 +1052,14 @@ h3 {
   }
 
   .cta-main {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: nowrap;
+  }
+
+  .cta-main .btn {
+    margin-left: auto;
   }
 
   .cta-social {
