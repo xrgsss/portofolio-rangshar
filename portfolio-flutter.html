@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flutter App Portfolio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="top-nav">
+      <div class="nav-content">
+        <nav>
+          <a href="index.html#home">Home</a>
+          <a href="index.html#about">About</a>
+          <a href="index.html#portfolio">Portfolio</a>
+          <a href="index.html#contact">Contact</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="gallery-hero reveal">
+        <div class="page-links">
+          <a href="index.html#home">Home</a>
+          <a href="index.html#about">About</a>
+          <a href="index.html#portfolio">Portfolio</a>
+          <a href="index.html#contact">Contact</a>
+        </div>
+        <p class="section-kicker">Portfolio</p>
+        <h1>Aplikasi Flutter</h1>
+        <p>Project details for a Flutter application for mobile digital products with a focus on ease of use and a clean interface.</p>
+      </section>
+
+      <section class="web-gallery flutter-gallery reveal">
+        <div class="gallery-grid">
+          <a class="gallery-item reveal" style="--reveal-delay: 60ms" href="https://app-pumeow.vercel.app/#/home" target="_blank" rel="noopener" aria-label="Buka aplikasi Pumeow">
+            <img src="images/portofolio/aplikasi%20flutter/Screenshot%20%281240%29.png" alt="Pumeow app home screen">
+          </a>
+        </div>
+      </section>
+    </main>
+
+    <button class="back-to-top" type="button" aria-label="Scroll to top">&#8593;</button>
+  </div>
+  <script>
+    (function() {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('show');
+          } else {
+            entry.target.classList.remove('show');
+          }
+        });
+      }, { threshold: 0.15 });
+
+      document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+
+      const backToTop = document.querySelector('.back-to-top');
+      if (backToTop) {
+        backToTop.addEventListener('click', () => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        const toggleBackToTop = () => {
+          if (window.scrollY > 240) {
+            backToTop.classList.add('show');
+          } else {
+            backToTop.classList.remove('show');
+          }
+        };
+
+        toggleBackToTop();
+        window.addEventListener('scroll', toggleBackToTop);
+      }
+    })();
+  </script>
+</body>
+</html>

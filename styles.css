@@ -252,6 +252,26 @@ section {
   margin: 6px 0;
 }
 
+.hero-copy h1.type-loop {
+  min-height: 1.2em;
+}
+
+.hero-copy h1.type-loop::after {
+  content: '|';
+  margin-left: 4px;
+  color: var(--primary);
+  animation: caret-blink 900ms steps(1, end) infinite;
+}
+
+@keyframes caret-blink {
+  0%, 49% {
+    opacity: 1;
+  }
+  50%, 100% {
+    opacity: 0;
+  }
+}
+
 .hero-copy .eyebrow {
   text-transform: uppercase;
   letter-spacing: 2px;
@@ -288,6 +308,8 @@ section {
   place-items: center;
   overflow: hidden;
   box-shadow: 0 30px 80px rgba(76, 62, 155, 0.35);
+  animation: hero-popup-loop 3.2s ease-in-out infinite;
+  will-change: transform, box-shadow;
 }
 
 .hero-blob img {
@@ -295,6 +317,23 @@ section {
   height: 98%;
   object-fit: cover;
   border-radius: 40% 60% 50% 50%;
+}
+
+@keyframes hero-popup-loop {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+    box-shadow: 0 30px 80px rgba(76, 62, 155, 0.35);
+  }
+  50% {
+    transform: translateY(-16px) scale(1.02);
+    box-shadow: 0 40px 96px rgba(76, 62, 155, 0.42);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-blob {
+    animation: none;
+  }
 }
 
 .section-kicker {
@@ -405,6 +444,11 @@ section {
   width: 100%;
   height: 160px;
   object-fit: cover;
+  transition: opacity 220ms ease;
+}
+
+.folio-card img.is-swapping {
+  opacity: 0.2;
 }
 
 .folio-card span {
@@ -494,7 +538,7 @@ section {
 
 .experience-panel {
   width: min(900px, 92vw);
-  margin: 0 auto 96px;
+  margin: 0 auto;
   text-align: center;
 }
 
@@ -538,7 +582,7 @@ section {
 
 .tools-panel {
   width: min(900px, 92vw);
-  margin: 0 auto 96px;
+  margin: 0 auto;
   text-align: center;
 }
 
@@ -926,6 +970,27 @@ section {
   max-height: 520px;
   object-fit: contain;
   background: #0c0e18;
+}
+
+.flutter-gallery .gallery-grid {
+  grid-template-columns: minmax(280px, 760px);
+  justify-content: center;
+}
+
+.flutter-gallery .gallery-item {
+  cursor: pointer;
+}
+
+.flutter-gallery .gallery-item::after {
+  content: 'Klik untuk buka app';
+}
+
+.flutter-gallery .gallery-item img {
+  width: 100%;
+  height: auto;
+  max-height: 760px;
+  object-fit: contain;
+  background: #ede2d0;
 }
 
 h1, h2, h3, h4 {
