@@ -82,6 +82,40 @@ body::after {
 
 .page-shell {
   min-height: 100vh;
+  position: relative;
+}
+
+.page-shell::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url('https://cdn.svgator.com/images/2022/06/use-svg-as-background-image-particle-strokes.svg');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  opacity: 0.18;
+  z-index: -2;
+  pointer-events: none;
+  animation: drift-bg 14s ease-in-out infinite alternate;
+}
+
+.page-shell::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: #ffffff;
+  opacity: 0.8;
+  z-index: -1;
+  pointer-events: none;
+}
+
+@keyframes drift-bg {
+  0% {
+    transform: translateY(0) translateX(0) scale(1);
+  }
+  100% {
+    transform: translateY(-18px) translateX(10px) scale(1.04);
+  }
 }
 
 .top-nav {
@@ -456,6 +490,93 @@ section {
 
 .cta {
   width: 100%;
+}
+
+.experience-panel {
+  width: min(900px, 92vw);
+  margin: 0 auto 96px;
+  text-align: center;
+}
+
+.experience-panel h3 {
+  margin: 6px 0 18px;
+}
+
+.experience-list {
+  display: grid;
+  gap: 12px;
+}
+
+.experience-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: var(--card);
+  border: 1px solid rgba(109, 75, 255, 0.12);
+  box-shadow: 0 10px 26px rgba(62, 46, 120, 0.12);
+  text-align: left;
+}
+
+.experience-card h4 {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+
+.experience-card p {
+  margin: 0;
+  color: #4b4e5c;
+}
+
+.experience-card span {
+  font-weight: 700;
+  color: var(--primary);
+  white-space: nowrap;
+}
+
+.tools-panel {
+  width: min(900px, 92vw);
+  margin: 0 auto 96px;
+  text-align: center;
+}
+
+.tools-panel h3 {
+  margin: 6px 0 18px;
+}
+
+.tools-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.tool-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 18px;
+  border-radius: 999px;
+  background: var(--card);
+  border: 1px solid rgba(109, 75, 255, 0.16);
+  color: #3a3b45;
+  font-weight: 700;
+  font-size: 14px;
+  box-shadow: 0 8px 20px rgba(62, 46, 120, 0.12);
+}
+
+.tool-chip img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  display: block;
+}
+
+.tool-chip:hover {
+  border-color: rgba(109, 75, 255, 0.3);
+  box-shadow: 0 12px 26px rgba(62, 46, 120, 0.18);
 }
 
 .cta-social {
