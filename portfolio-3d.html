@@ -169,6 +169,20 @@
                 }, 300);
             };
 
+            // Security measure: Prevent context menu (right click)
+            document.addEventListener('contextmenu', (e) => {
+                if (e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO') {
+                    e.preventDefault();
+                }
+            });
+
+            // Prevent dragging of images and videos
+            document.addEventListener('dragstart', (e) => {
+                if (e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO' || e.target.tagName === 'A') {
+                    e.preventDefault();
+                }
+            });
+
             items.forEach(item => {
                 item.addEventListener('click', (e) => {
                     const isVideo = item.tagName.toLowerCase() === 'video';

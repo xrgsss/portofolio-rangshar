@@ -1,14 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Web Development Portfolio</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
   <div class="page-shell">
     <header class="top-nav">
@@ -37,13 +41,16 @@
 
       <section class="web-gallery reveal">
         <div class="gallery-grid">
-          <a class="gallery-item reveal" style="--reveal-delay: 80ms" href="https://motor-ku-iota.vercel.app" target="_blank" rel="noopener">
+          <a class="gallery-item reveal" style="--reveal-delay: 80ms" href="https://motor-ku-iota.vercel.app"
+            target="_blank" rel="noopener">
             <img src="images/portofolio/web/Screenshot%202025-12-26%20180917.png" alt="Website 1">
           </a>
-          <a class="gallery-item reveal" style="--reveal-delay: 160ms" href="https://persela-store.vercel.app/" target="_blank" rel="noopener">
+          <a class="gallery-item reveal" style="--reveal-delay: 160ms" href="https://persela-store.vercel.app/"
+            target="_blank" rel="noopener">
             <img src="images/portofolio/web/Screenshot%202025-12-27%20091020.png" alt="Website 2">
           </a>
-          <a class="gallery-item reveal" style="--reveal-delay: 240ms" href="https://rampfor.vercel.app/" target="_blank" rel="noopener">
+          <a class="gallery-item reveal" style="--reveal-delay: 240ms" href="https://rampfor.vercel.app/"
+            target="_blank" rel="noopener">
             <img src="images/portofolio/web/Screenshot%20(1218).png" alt="Screenshot 1218">
           </a>
         </div>
@@ -84,7 +91,22 @@
         toggleBackToTop();
         window.addEventListener('scroll', toggleBackToTop);
       }
+
+      // Security measure: Prevent context menu (right click)
+      document.addEventListener('contextmenu', (e) => {
+        if (e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO') {
+          e.preventDefault();
+        }
+      });
+
+      // Prevent dragging of images and videos
+      document.addEventListener('dragstart', (e) => {
+        if (e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO' || e.target.tagName === 'A') {
+          e.preventDefault();
+        }
+      });
     })();
   </script>
 </body>
+
 </html>

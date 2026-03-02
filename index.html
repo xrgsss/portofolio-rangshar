@@ -411,9 +411,25 @@
           }
         };
 
+
         toggleBackToTop();
         window.addEventListener('scroll', toggleBackToTop);
       }
+
+      // Security measure: Prevent context menu (right click) on all elements
+      document.addEventListener('contextmenu', (e) => {
+        if (e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO') {
+          e.preventDefault();
+        }
+      });
+
+      // Prevent dragging of images and videos
+      document.addEventListener('dragstart', (e) => {
+        if (e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO' || e.target.tagName === 'A') {
+          e.preventDefault();
+        }
+      });
+
     })();
   </script>
 </body>

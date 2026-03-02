@@ -1,14 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Fotografi & Visual Content</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
   <div class="page-shell">
     <header class="top-nav">
@@ -76,7 +80,7 @@
     </div>
   </div>
   <script>
-    (function() {
+    (function () {
       const items = document.querySelectorAll('.gallery-item img');
       const lightbox = document.getElementById('lightbox');
       const lightboxImg = lightbox.querySelector('img');
@@ -93,6 +97,20 @@
         lightbox.classList.remove('open');
         lightboxImg.src = '';
       };
+
+      // Security measure: Prevent context menu (right click)
+      document.addEventListener('contextmenu', (e) => {
+        if (e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO') {
+          e.preventDefault();
+        }
+      });
+
+      // Prevent dragging of images and videos
+      document.addEventListener('dragstart', (e) => {
+        if (e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO' || e.target.tagName === 'A') {
+          e.preventDefault();
+        }
+      });
 
       items.forEach(img => {
         img.addEventListener('click', () => open(img.src, img.alt));
@@ -136,4 +154,5 @@
     })();
   </script>
 </body>
+
 </html>
