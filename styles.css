@@ -113,6 +113,7 @@ body::after {
   0% {
     transform: translateY(0) translateX(0) scale(1);
   }
+
   100% {
     transform: translateY(-18px) translateX(10px) scale(1.04);
   }
@@ -264,10 +265,14 @@ section {
 }
 
 @keyframes caret-blink {
-  0%, 49% {
+
+  0%,
+  49% {
     opacity: 1;
   }
-  50%, 100% {
+
+  50%,
+  100% {
     opacity: 0;
   }
 }
@@ -363,8 +368,9 @@ section {
 }
 
 .card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 20px;
   margin-top: 28px;
 }
@@ -375,6 +381,8 @@ section {
   padding: 28px;
   text-align: left;
   box-shadow: var(--shadow);
+  flex: 1 1 220px;
+  max-width: 320px;
 }
 
 .card h4 {
@@ -403,8 +411,9 @@ section {
 
 .portfolio-grid {
   margin-top: 26px;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 18px;
 }
 
@@ -418,6 +427,8 @@ section {
   transition: transform 180ms ease, box-shadow 180ms ease;
   text-decoration: none;
   color: inherit;
+  flex: 1 1 240px;
+  max-width: 340px;
 }
 
 .folio-card img {
@@ -847,13 +858,17 @@ section {
   position: relative;
   cursor: zoom-in;
   text-decoration: none;
+  display: block;
 }
 
-.gallery-item img {
+.gallery-item img,
+.gallery-item video {
   width: 100%;
   height: 180px;
   object-fit: cover;
   display: block;
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 .gallery-item span {
@@ -867,13 +882,19 @@ section {
   right: 0;
   bottom: 0;
   padding: 8px 10px;
-  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.55));
+  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.75));
   color: #fff;
   font-weight: 700;
-  font-size: 12px;
+  font-size: 13px;
   letter-spacing: 0.2px;
   text-align: center;
-  opacity: 0.95;
+  opacity: 0;
+  transition: opacity 200ms ease;
+  pointer-events: none;
+}
+
+.gallery-item:hover::after {
+  opacity: 1;
 }
 
 .lightbox {
@@ -901,14 +922,15 @@ section {
   max-width: 90vw;
   max-height: 90vh;
   border-radius: 16px;
-  overflow: visible;
+  overflow: hidden;
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45);
   z-index: 1;
   background: #0c0e18;
   display: inline-block;
 }
 
-.lightbox-content img {
+.lightbox-content img,
+.lightbox-content video {
   max-width: 90vw;
   max-height: 90vh;
   width: auto;
@@ -945,7 +967,8 @@ section {
   cursor: pointer;
 }
 
-.web-gallery .gallery-item img {
+.web-gallery .gallery-item img,
+.web-gallery .gallery-item video {
   height: auto;
   max-width: 100%;
   max-height: 520px;
@@ -974,7 +997,10 @@ section {
   background: #ede2d0;
 }
 
-h1, h2, h3, h4 {
+h1,
+h2,
+h3,
+h4 {
   font-family: 'Space Grotesk', 'Manrope', sans-serif;
   color: #2d2d35;
 }

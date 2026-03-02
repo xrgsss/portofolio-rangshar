@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Design Portfolio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="page-shell">
+        <header class="top-nav">
+            <div class="nav-content">
+                <nav>
+                    <a href="index.html#home">Home</a>
+                    <a href="index.html#about">About</a>
+                    <a href="index.html#portfolio">Portfolio</a>
+                    <a href="index.html#contact">Contact</a>
+                </nav>
+            </div>
+        </header>
+
+        <main>
+            <section class="gallery-hero reveal">
+                <div class="page-links">
+                    <a href="index.html#home">Home</a>
+                    <a href="index.html#about">About</a>
+                    <a href="index.html#portfolio">Portfolio</a>
+                    <a href="index.html#contact">Contact</a>
+                </div>
+                <p class="section-kicker">Portfolio</p>
+                <h1>3D Design</h1>
+                <p>A collection of my 3D design projects, featuring detailed models and realistic renders.</p>
+            </section>
+
+            <section class="reveal">
+                <div class="gallery-grid">
+                    <a class="gallery-item reveal" style="--reveal-delay: 60ms">
+                        <video src="images/portofolio/3d/0213.mp4" loop muted playsinline alt="3D Trailer"></video>
+                        <span>3D Trailer</span>
+                    </a>
+                    <a class="gallery-item reveal" style="--reveal-delay: 120ms">
+                        <video src="images/portofolio/3d/0220.mp4" loop muted playsinline alt="3D Model Video"></video>
+                        <span>3D Model Video</span>
+                    </a>
+                    <a class="gallery-item reveal" style="--reveal-delay: 180ms">
+                        <video src="images/portofolio/3d/3d%20thunder.mp4" loop muted playsinline
+                            alt="3D Thunder"></video>
+                        <span>3D Thunder</span>
+                    </a>
+                    <a class="gallery-item reveal" style="--reveal-delay: 240ms">
+                        <img src="images/portofolio/3d/c2.png" alt="C2 3D Model">
+                        <span>C2 3D Model</span>
+                    </a>
+                    <a class="gallery-item reveal" style="--reveal-delay: 300ms">
+                        <img src="images/portofolio/3d/flat%20tracker.png" alt="Flat Tracker Model">
+                        <span>Flat Tracker Model</span>
+                    </a>
+                    <a class="gallery-item reveal" style="--reveal-delay: 360ms">
+                        <img src="images/portofolio/3d/harley2.png" alt="Harley 2 3D Render">
+                        <span>Harley 2 3D Render</span>
+                    </a>
+                    <a class="gallery-item reveal" style="--reveal-delay: 420ms">
+                        <img src="images/portofolio/3d/harley3.png" alt="Harley 3 3D Render">
+                        <span>Harley 3 3D Render</span>
+                    </a>
+                    <a class="gallery-item reveal" style="--reveal-delay: 480ms">
+                        <img src="images/portofolio/3d/miyabi.png" alt="Miyabi 3D Render">
+                        <span>Miyabi 3D Render</span>
+                    </a>
+                    <a class="gallery-item reveal" style="--reveal-delay: 540ms">
+                        <video src="images/portofolio/3d/ramadan(1).mp4" loop muted playsinline
+                            alt="Ramadan 3D"></video>
+                        <span>Ramadan 3D</span>
+                    </a>
+                    <a class="gallery-item reveal" style="--reveal-delay: 600ms">
+                        <video src="images/portofolio/3d/rangshar_0000001-0400.mov" loop muted playsinline
+                            alt="Rangshar 3D Animation"></video>
+                        <span>Rangshar 3D Animation</span>
+                    </a>
+                </div>
+            </section>
+        </main>
+
+        <button class="back-to-top" type="button" aria-label="Scroll to top">&#8593;</button>
+
+        <div class="lightbox" id="lightbox">
+            <div class="lightbox-backdrop"></div>
+            <div class="lightbox-content" id="lightbox-content">
+                <button class="lightbox-close" aria-label="Close">&times;</button>
+                <img id="lightbox-img" src="" alt="Preview" style="display: none;">
+                <video id="lightbox-video" src="" autoplay loop muted playsinline
+                    style="display: none; max-width: 90vw; max-height: 90vh;"></video>
+            </div>
+        </div>
+    </div>
+    <script>
+        (function () {
+            const items = document.querySelectorAll('.gallery-item img, .gallery-item video');
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImg = document.getElementById('lightbox-img');
+            const lightboxVideo = document.getElementById('lightbox-video');
+            const closeBtn = lightbox.querySelector('.lightbox-close');
+            const backdrop = lightbox.querySelector('.lightbox-backdrop');
+
+            const gridVideos = document.querySelectorAll('.gallery-grid video');
+
+            // Intersection Observer to play videos only when they are visible
+            const videoObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.play().catch(e => console.log('Video play error:', e));
+                    } else {
+                        entry.target.pause();
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            // Initialize video observer
+            gridVideos.forEach(video => {
+                videoObserver.observe(video);
+            });
+
+            const open = (src, alt, isVideo) => {
+                // Pause all background videos to save performance
+                gridVideos.forEach(v => {
+                    v.pause();
+                    videoObserver.unobserve(v);
+                });
+
+                if (isVideo) {
+                    lightboxImg.style.display = 'none';
+                    lightboxImg.src = '';
+                    lightboxVideo.style.display = 'block';
+                    lightboxVideo.src = src;
+                } else {
+                    lightboxVideo.style.display = 'none';
+                    lightboxVideo.src = '';
+                    lightboxImg.style.display = 'block';
+                    lightboxImg.src = src;
+                    lightboxImg.alt = alt || 'Preview';
+                }
+                lightbox.classList.add('open');
+            };
+
+            const close = () => {
+                lightbox.classList.remove('open');
+                setTimeout(() => {
+                    lightboxImg.src = '';
+                    lightboxVideo.src = '';
+                    lightboxImg.style.display = 'none';
+                    lightboxVideo.style.display = 'none';
+
+                    // Resume checking grid videos visibility
+                    gridVideos.forEach(v => {
+                        videoObserver.observe(v);
+                        // Trigger play if already intersecting
+                        const rect = v.getBoundingClientRect();
+                        if (rect.top < window.innerHeight && rect.bottom >= 0) {
+                            v.play().catch(e => { });
+                        }
+                    });
+                }, 300);
+            };
+
+            items.forEach(item => {
+                item.addEventListener('click', (e) => {
+                    const isVideo = item.tagName.toLowerCase() === 'video';
+                    open(item.src, item.alt, isVideo);
+                });
+            });
+
+            closeBtn.addEventListener('click', close);
+            backdrop.addEventListener('click', close);
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') close();
+            });
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('show');
+                    } else {
+                        entry.target.classList.remove('show');
+                    }
+                });
+            }, { threshold: 0.15 });
+
+            document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+
+            const backToTop = document.querySelector('.back-to-top');
+            if (backToTop) {
+                backToTop.addEventListener('click', () => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+
+                const toggleBackToTop = () => {
+                    if (window.scrollY > 240) {
+                        backToTop.classList.add('show');
+                    } else {
+                        backToTop.classList.remove('show');
+                    }
+                };
+
+                toggleBackToTop();
+                window.addEventListener('scroll', toggleBackToTop);
+            }
+        })();
+    </script>
+</body>
+
+</html>
