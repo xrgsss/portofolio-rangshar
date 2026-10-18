@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= pageTitle %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+
+<body>
+  <div class="page-shell">
+    <header class="top-nav">
+      <div class="nav-content">
+        <nav>
+          <a href="/#home">Home</a>
+          <a href="/#about">About</a>
+          <a href="/#portfolio">Portfolio</a>
+          <a href="/#contact">Contact</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="gallery-hero reveal">
+        <div class="page-links">
+          <a href="/#home">Home</a>
+          <a href="/#about">About</a>
+          <a href="/#portfolio">Portfolio</a>
+          <a href="/#contact">Contact</a>
+        </div>
+        <p class="section-kicker"><%= gallery.kicker %></p>
+        <h1><%= gallery.title %></h1>
+        <% if (gallery.description) { %>
+        <p><%= gallery.description %></p>
+        <% } %>
+      </section>
+
+      <% gallery.sections.forEach((section) => { %>
+      <% const sectionClasses = [
+           section.title ? 'gallery-section' : '',
+           gallery.variant === 'web' || gallery.variant === 'flutter' ? 'web-gallery' : '',
+           gallery.variant === 'flutter' ? 'flutter-gallery' : '',
+           'reveal'
+         ].filter(Boolean).join(' '); %>
+      <section class="<%= sectionClasses %>">
+        <% if (section.title) { %>
+        <h3><%= section.title %></h3>
+        <% } %>
+        <div class="gallery-grid">
+          <% section.items.forEach((item, index) => { %>
+          <% const isLink = Boolean(item.href); %>
+          <% const tag = isLink ? 'a' : 'div'; %>
+          <<%= tag %> class="gallery-item reveal" style="--reveal-delay: <%= 60 + index * 60 %>ms"
+            <% if (isLink) { %>href="<%= item.href %>" target="_blank" rel="noopener"<% } %>
+            <% if (isLink && item.alt) { %>aria-label="<%= item.alt %>"<% } %>>
+            <% if (item.type === 'video') { %>
+            <video src="<%= item.src %>" loop muted playsinline alt="<%= item.alt %>"></video>
+            <% } else { %>
+            <img src="<%= item.src %>" alt="<%= item.alt %>">
+            <% } %>
+            <% if (item.caption) { %>
+            <span><%= item.caption %></span>
+            <% } %>
+          </<%= tag %>>
+          <% }); %>
+        </div>
+      </section>
+      <% }); %>
+    </main>
+
+    <button class="back-to-top" type="button" aria-label="Scroll to top">&#8593;</button>
+
+    <% if (hasLightboxItems) { %>
+    <div class="lightbox" id="lightbox">
+      <div class="lightbox-backdrop"></div>
+      <div class="lightbox-content" id="lightbox-content">
+        <button class="lightbox-close" aria-label="Close">&times;</button>
+        <img id="lightbox-img" src="" alt="Preview" style="display: none;">
+        <video id="lightbox-video" src="" autoplay loop muted playsinline
+          style="display: none; max-width: 90vw; max-height: 90vh;"></video>
+      </div>
+    </div>
+    <% } %>
+  </div>
+  <script>
+    (function () {
+      // Muat gambar secara malas supaya galeri panjang tetap ringan.
+      document.querySelectorAll('.gallery-item img').forEach((img) => {
+        if (!img.hasAttribute('loading')) img.loading = 'lazy';
+        img.decoding = 'async';
+      });
+
+      const gridVideos = document.querySelectorAll('.gallery-grid video');
+      const videoObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.play().catch(() => { });
+          } else {
+            entry.target.pause();
+          }
+        });
+      }, { threshold: 0.1 });
+
+      gridVideos.forEach((video) => videoObserver.observe(video));
+
+      const lightbox = document.getElementById('lightbox');
+
+      if (lightbox) {
+        const lightboxImg = document.getElementById('lightbox-img');
+        const lightboxVideo = document.getElementById('lightbox-video');
+        const closeBtn = lightbox.querySelector('.lightbox-close');
+        const backdrop = lightbox.querySelector('.lightbox-backdrop');
+
+        const open = (src, alt, isVideo) => {
+          gridVideos.forEach((video) => {
+            video.pause();
+            videoObserver.unobserve(video);
+          });
+
+          if (isVideo) {
+            lightboxImg.style.display = 'none';
+            lightboxImg.src = '';
+            lightboxVideo.style.display = 'block';
+            lightboxVideo.src = src;
+          } else {
+            lightboxVideo.style.display = 'none';
+            lightboxVideo.src = '';
+            lightboxImg.style.display = 'block';
+            lightboxImg.src = src;
+            lightboxImg.alt = alt || 'Preview';
+          }
+
+          lightbox.classList.add('open');
+        };
+
+        const close = () => {
+          lightbox.classList.remove('open');
+          setTimeout(() => {
+            lightboxImg.src = '';
+            lightboxVideo.src = '';
+            lightboxImg.style.display = 'none';
+            lightboxVideo.style.display = 'none';
+
+            gridVideos.forEach((video) => {
+              videoObserver.observe(video);
+              const rect = video.getBoundingClientRect();
+              if (rect.top < window.innerHeight && rect.bottom >= 0) {
+                video.play().catch(() => { });
+              }
+            });
+          }, 300);
+        };
+
+        // Hanya item yang bukan tautan luar yang membuka lightbox.
+        document.querySelectorAll('.gallery-item').forEach((item) => {
+          if (item.tagName.toLowerCase() === 'a') return;
+          item.addEventListener('click', () => {
+            const media = item.querySelector('img, video');
+            if (!media) return;
+            open(media.getAttribute('src'), media.getAttribute('alt'), media.tagName.toLowerCase() === 'video');
+          });
+        });
+
+        closeBtn.addEventListener('click', close);
+        backdrop.addEventListener('click', close);
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') close();
+        });
+      }
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('show');
+          } else {
+            entry.target.classList.remove('show');
+          }
+        });
+      }, { threshold: 0.15 });
+
+      document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+
+      const backToTop = document.querySelector('.back-to-top');
+      if (backToTop) {
+        backToTop.addEventListener('click', () => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        const toggleBackToTop = () => {
+          if (window.scrollY > 240) {
+            backToTop.classList.add('show');
+          } else {
+            backToTop.classList.remove('show');
+          }
+        };
+
+        toggleBackToTop();
+        window.addEventListener('scroll', toggleBackToTop);
+      }
+
+      // Security measure: Prevent context menu (right click)
+      document.addEventListener('contextmenu', (e) => {
+        if (e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO') {
+          e.preventDefault();
+        }
+      });
+
+      // Prevent dragging of images and videos
+      document.addEventListener('dragstart', (e) => {
+        if (e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO' || e.target.tagName === 'A') {
+          e.preventDefault();
+        }
+      });
+    })();
+  </script>
+</body>
+
+</html>

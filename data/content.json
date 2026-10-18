@@ -1,0 +1,236 @@
+{
+  "meta": {
+    "siteTitle": "Rangga Febrianto | Portfolio"
+  },
+  "hero": {
+    "eyebrow": "Hello,",
+    "title": "I Am Rangga Febrianto",
+    "role": "Creating Digital & Visual Solutions from Various Perspectives",
+    "lede": [
+      "I am a creator who works on various types of projects.",
+      "From visual design and website development to digital experimentation, I focus on quality, functionality, and user experience."
+    ],
+    "image": "images/hero/hero.png",
+    "imageAlt": "Portrait of Rangga Febrianto",
+    "ctaLabel": "Let's talk",
+    "ctaHref": "#contact",
+    "socialRail": {
+      "label": "instagram",
+      "href": "https://instagram.com/rangshar_",
+      "caption": "follow me"
+    },
+    "navLinks": [
+      {
+        "label": "About",
+        "href": "#about"
+      },
+      {
+        "label": "Portfolio",
+        "href": "#portfolio"
+      },
+      {
+        "label": "Contact",
+        "href": "#contact"
+      }
+    ]
+  },
+  "about": {
+    "kicker": "About me",
+    "heading": "Building usable, beautiful products.",
+    "body": [
+      "I am an individual who is interested in various creative and technological fields. I enjoy exploring new ideas, learning new things, and turning concepts into real projects."
+    ],
+    "image": "images/about%20me/ainulllm%20(279%20of%20929)%20(1).jpg",
+    "imageAlt": "About me",
+    "buttons": [
+      {
+        "variant": "primary",
+        "label": "Hire Me",
+        "href": "#contact"
+      },
+      {
+        "variant": "ghost",
+        "label": "View Portfolio",
+        "href": "#portfolio"
+      }
+    ]
+  },
+  "specialties": {
+    "kicker": "Specializing In",
+    "heading": "Designing for impact, grounded in research.",
+    "items": [
+      {
+        "pill": "Design",
+        "title": "Graphic Design",
+        "body": "I create strong and consistent visual designs to reinforce brand identity. Each piece is designed to be eye-catching and memorable."
+      },
+      {
+        "pill": "Photo",
+        "title": "Photography",
+        "body": "I produce clean, aesthetic, and professional visuals. The content is ready to use for branding and digital needs."
+      },
+      {
+        "pill": "Web",
+        "title": "Web Development",
+        "body": "I build modern, responsive, and functional websites. Combining visual design and optimal performance."
+      },
+      {
+        "pill": "Flutter",
+        "title": "Flutter App",
+        "body": "I develop lightweight, responsive, and user-friendly mobile applications based on Flutter for various screen sizes."
+      },
+      {
+        "pill": "3D",
+        "title": "3D Design",
+        "body": "I create detailed and realistic 3D models and renderings for various needs, combining creativity with technical precision to bring concepts to life."
+      }
+    ]
+  },
+  "portfolio": {
+    "kicker": "Portfolio",
+    "heading": "A selection of recent work.",
+    "items": [
+      {
+        "label": "Graphic Design",
+        "href": "portfolio-graphic.html",
+        "galleryId": "graphic",
+        "gallerySource": "portfolio-graphic.html",
+        "cover": "images/portofolio/design/kampus/3.jpg",
+        "coverAlt": "Graphic design boards"
+      },
+      {
+        "label": "Photography",
+        "href": "portfolio-photo.html",
+        "galleryId": "photo",
+        "gallerySource": "portfolio-photo.html",
+        "cover": "images/portofolio/fotografi/11.jpg",
+        "coverAlt": "Photography scene in desert"
+      },
+      {
+        "label": "Web Development",
+        "href": "portfolio-web.html",
+        "galleryId": "web",
+        "gallerySource": "portfolio-web.html",
+        "cover": "images/portofolio/web/Screenshot%202025-12-26%20180917.png",
+        "coverAlt": "Web development workspace"
+      },
+      {
+        "label": "Flutter App",
+        "href": "portfolio-flutter.html",
+        "galleryId": "flutter",
+        "gallerySource": "portfolio-flutter.html",
+        "cover": "images/portofolio/aplikasi%20flutter/Screenshot%20%281240%29.png",
+        "coverAlt": "Flutter app preview"
+      },
+      {
+        "label": "3D Design",
+        "href": "portfolio-3d.html",
+        "galleryId": "3d",
+        "gallerySource": "portfolio-3d.html",
+        "cover": "images/portofolio/3d/flat%20tracker.png",
+        "coverAlt": "3D Design"
+      }
+    ]
+  },
+  "experience": {
+    "kicker": "Work Experience",
+    "heading": "Work experience & internships.",
+    "items": [
+      {
+        "title": "Graphic Designer & Admin Social Media",
+        "company": "Persela Fc",
+        "period": "2023 - 2025"
+      },
+      {
+        "title": "Freelancer Graphic Designer",
+        "company": "VNY Apparel",
+        "period": "2024 - Now"
+      },
+      {
+        "title": "Internship Desginer & Admin Social Media",
+        "company": "Prodi Informatika Universitas Muhammadiyah Malang",
+        "period": "2025 - Now"
+      }
+    ]
+  },
+  "tools": {
+    "kicker": "Tools & Software",
+    "heading": "Technology Stack I Use",
+    "items": [
+      {
+        "name": "Figma",
+        "logo": "images/logo/Figma.png",
+        "logoAlt": "Figma logo"
+      },
+      {
+        "name": "Adobe Photoshop",
+        "logo": "images/logo/Adobe Photoshop.png",
+        "logoAlt": "Adobe Photoshop logo"
+      },
+      {
+        "name": "Adobe Illustrator",
+        "logo": "images/logo/Adobe Illustrator.png",
+        "logoAlt": "Adobe Illustrator logo"
+      },
+      {
+        "name": "Adobe Lightroom",
+        "logo": "images/logo/Adobe Lightroom.png",
+        "logoAlt": "Adobe Lightroom logo"
+      },
+      {
+        "name": "Adobe Premiere Pro",
+        "logo": "images/logo/Adobe Premiere Pro.png",
+        "logoAlt": "Adobe Premiere Pro logo"
+      },
+      {
+        "name": "Adobe After Effects",
+        "logo": "images/logo/Adobe After Effects.png",
+        "logoAlt": "Adobe After Effects logo"
+      },
+      {
+        "name": "Blender",
+        "logo": "images/logo/Blender.png",
+        "logoAlt": "Blender logo"
+      },
+      {
+        "name": "CapCut",
+        "logo": "images/logo/Capcut.png",
+        "logoAlt": "CapCut logo"
+      },
+      {
+        "name": "Android Studio",
+        "logo": "images/logo/Android Studio.png",
+        "logoAlt": "Android Studio logo"
+      },
+      {
+        "name": "Visual Studio Code",
+        "logo": "images/logo/Visual Studio Code.png",
+        "logoAlt": "Visual Studio Code logo"
+      },
+      {
+        "name": "Meta",
+        "logo": "images/logo/Meta.webp",
+        "logoAlt": "Meta logo"
+      }
+    ]
+  },
+  "contact": {
+    "socialKicker": "Social Media",
+    "socials": [
+      {
+        "label": "Instagram",
+        "href": "https://instagram.com/rangshar_"
+      },
+      {
+        "label": "Facebook",
+        "href": "https://www.facebook.com/rangs.febri"
+      }
+    ],
+    "kicker": "Hire me?",
+    "heading": "Contact me",
+    "button": {
+      "label": "Say hello",
+      "href": "https://wa.me/6285648494373"
+    }
+  }
+}

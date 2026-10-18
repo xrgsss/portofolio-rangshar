@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Login Admin | <%= siteTitle %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="/assets/admin/admin.css">
+</head>
+
+<body class="login-page">
+  <div class="login-shell">
+    <div class="login-card">
+      <div class="login-brand">
+        <span class="brand-mark">RF</span>
+        <div>
+          <h1>Admin Dashboard</h1>
+          <p>Rangga Febrianto — Portfolio</p>
+        </div>
+      </div>
+
+      <% if (error) { %>
+      <div class="alert alert-error" role="alert"><%= error %></div>
+      <% } %>
+      <% if (notice) { %>
+      <div class="alert alert-info" role="status"><%= notice %></div>
+      <% } %>
+
+      <form method="post" action="/admin/login" autocomplete="off" novalidate>
+        <input type="hidden" name="next" value="<%= next %>">
+
+        <label class="field">
+          <span>Username</span>
+          <input type="text" name="username" required autocapitalize="none" autocomplete="username"
+            spellcheck="false" autofocus>
+        </label>
+
+        <label class="field">
+          <span>Password</span>
+          <input type="password" name="password" required autocomplete="current-password">
+        </label>
+
+        <button type="submit" class="btn-primary btn-block">Masuk</button>
+      </form>
+
+      <p class="login-foot">
+        Halaman ini hanya untuk pemilik website. Semua percobaan login dicatat dan dibatasi.
+      </p>
+    </div>
+  </div>
+</body>
+
+</html>

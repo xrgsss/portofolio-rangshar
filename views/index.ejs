@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= pageTitle %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+
+<body>
+  <div class="page-shell">
+    <header class="top-nav">
+      <div class="nav-content">
+        <nav>
+          <% content.hero.navLinks.forEach((link) => { %>
+          <a href="<%= link.href %>"><%= link.label %></a>
+          <% }); %>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero reveal" id="home">
+        <div class="hero-links">
+          <% content.hero.navLinks.forEach((link) => { %>
+          <a href="<%= link.href %>"><%= link.label %></a>
+          <% }); %>
+        </div>
+        <% if (content.hero.socialRail.label || content.hero.socialRail.href) { %>
+        <div class="social-rail">
+          <a class="social-link" href="<%= content.hero.socialRail.href %>" target="_blank"
+            rel="noopener"><%= content.hero.socialRail.label %></a>
+          <div class="rail-line"></div>
+          <span class="rail-label"><%= content.hero.socialRail.caption %></span>
+        </div>
+        <% } %>
+        <div class="hero-copy">
+          <p class="eyebrow"><%= content.hero.eyebrow %></p>
+          <h1><%= content.hero.title %></h1>
+          <p class="role"><%= content.hero.role %></p>
+          <% content.hero.lede.forEach((paragraph) => { %>
+          <p class="lede"><%= paragraph %></p>
+          <% }); %>
+          <% if (content.hero.ctaLabel) { %>
+          <div class="cta-row">
+            <a class="btn primary" href="<%= content.hero.ctaHref %>"><%= content.hero.ctaLabel %></a>
+          </div>
+          <% } %>
+        </div>
+        <div class="hero-visual">
+          <div class="hero-blob">
+            <% if (content.hero.image) { %>
+            <img src="<%= content.hero.image %>" alt="<%= content.hero.imageAlt %>">
+            <% } %>
+          </div>
+        </div>
+      </section>
+
+      <section class="about reveal" id="about">
+        <div class="about-visual">
+          <div class="photo-frame">
+            <% if (content.about.image) { %>
+            <img src="<%= content.about.image %>" alt="<%= content.about.imageAlt %>">
+            <% } %>
+          </div>
+        </div>
+        <div class="about-copy">
+          <p class="section-kicker"><%= content.about.kicker %></p>
+          <h2><%= content.about.heading %></h2>
+          <% content.about.body.forEach((paragraph) => { %>
+          <p><%= paragraph %></p>
+          <% }); %>
+          <% if (content.about.buttons.length) { %>
+          <div class="cta-row">
+            <% content.about.buttons.forEach((button) => { %>
+            <a class="btn <%= button.variant %>" href="<%= button.href %>"><%= button.label %></a>
+            <% }); %>
+          </div>
+          <% } %>
+        </div>
+      </section>
+
+      <section class="specialties reveal" id="blog">
+        <p class="section-kicker"><%= content.specialties.kicker %></p>
+        <h3><%= content.specialties.heading %></h3>
+        <div class="card-grid">
+          <% content.specialties.items.forEach((item, index) => { %>
+          <article class="card reveal" style="--reveal-delay: <%= 60 + index * 60 %>ms">
+            <div class="pill"><%= item.pill %></div>
+            <h4><%= item.title %></h4>
+            <p><%= item.body %></p>
+          </article>
+          <% }); %>
+        </div>
+      </section>
+
+      <section class="portfolio reveal" id="portfolio">
+        <p class="section-kicker"><%= content.portfolio.kicker %></p>
+        <h3><%= content.portfolio.heading %></h3>
+        <div class="portfolio-grid">
+          <% cards.forEach((card, index) => { %>
+          <a class="folio-card reveal" style="--reveal-delay: <%= 60 + index * 60 %>ms" href="<%= card.href %>"
+            data-images="<%= card.images.join('|') %>">
+            <% if (card.cover) { %>
+            <img src="<%= card.cover %>" alt="<%= card.coverAlt %>">
+            <% } %>
+            <span><%= card.label %></span>
+          </a>
+          <% }); %>
+        </div>
+      </section>
+
+      <section class="experience-section reveal" id="experience">
+        <div class="experience-panel">
+          <p class="section-kicker"><%= content.experience.kicker %></p>
+          <h3><%= content.experience.heading %></h3>
+          <div class="experience-list">
+            <% content.experience.items.forEach((item, index) => { %>
+            <article class="experience-card reveal" style="--reveal-delay: <%= 60 + index * 60 %>ms">
+              <div>
+                <h4><%= item.title %></h4>
+                <p><%= item.company %></p>
+              </div>
+              <span><%= item.period %></span>
+            </article>
+            <% }); %>
+          </div>
+        </div>
+      </section>
+
+      <section class="tools-section reveal" id="tools">
+        <div class="tools-panel">
+          <p class="section-kicker"><%= content.tools.kicker %></p>
+          <h3><%= content.tools.heading %></h3>
+          <div class="tools-grid">
+            <% content.tools.items.forEach((item, index) => { %>
+            <div class="tool-chip reveal" style="--reveal-delay: <%= 60 + index * 30 %>ms" aria-label="<%= item.name %>">
+              <% if (item.logo) { %>
+              <img src="<%= item.logo %>" alt="<%= item.logoAlt || item.name + ' logo' %>">
+              <% } else { %>
+              <span><%= item.name %></span>
+              <% } %>
+            </div>
+            <% }); %>
+          </div>
+        </div>
+      </section>
+
+      <section class="cta reveal" id="contact">
+        <div class="cta-social">
+          <p class="section-kicker"><%= content.contact.socialKicker %></p>
+          <div class="social-inline">
+            <% content.contact.socials.forEach((social) => { %>
+            <a href="<%= social.href %>" target="_blank" rel="noopener"><%= social.label %></a>
+            <% }); %>
+          </div>
+        </div>
+        <div class="cta-inner">
+          <div class="cta-main">
+            <div>
+              <p class="section-kicker"><%= content.contact.kicker %></p>
+              <h3><%= content.contact.heading %></h3>
+            </div>
+            <% if (content.contact.button.label) { %>
+            <a class="btn ghost" href="<%= content.contact.button.href %>" target="_blank"
+              rel="noopener"><%= content.contact.button.label %></a>
+            <% } %>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <button class="back-to-top" type="button" aria-label="Scroll to top">↑</button>
+  <script>
+    (() => {
+      const parseFallbackImages = (card, img) => {
+        const dataImages = (card.dataset.images || '')
+          .split('|')
+          .map((item) => item.trim())
+          .filter(Boolean);
+
+        const current = img ? img.getAttribute('src') : '';
+        return Array.from(new Set([current, ...dataImages].filter(Boolean)));
+      };
+
+      const startCardSlider = (img, images, delayMs) => {
+        if (!img || images.length < 2) {
+          return;
+        }
+
+        let currentIndex = Math.max(0, images.indexOf(img.getAttribute('src')));
+        let isSwitching = false;
+
+        setInterval(() => {
+          if (isSwitching) {
+            return;
+          }
+
+          const nextIndex = (currentIndex + 1) % images.length;
+          const nextSrc = images[nextIndex];
+          const preloader = new Image();
+          isSwitching = true;
+          preloader.src = nextSrc;
+
+          preloader.onload = () => {
+            img.classList.add('is-swapping');
+            setTimeout(() => {
+              img.src = nextSrc;
+              img.classList.remove('is-swapping');
+              currentIndex = nextIndex;
+              isSwitching = false;
+            }, 170);
+          };
+
+          preloader.onerror = () => {
+            isSwitching = false;
+          };
+        }, delayMs);
+      };
+
+      const initPortfolioCardSliders = () => {
+        const cards = document.querySelectorAll('.folio-card[data-images]');
+        cards.forEach((card, index) => {
+          const img = card.querySelector('img');
+          const images = parseFallbackImages(card, img);
+          startCardSlider(img, images, 2800 + index * 260);
+        });
+      };
+
+      const initHeroTitleLoop = () => {
+        const title = document.querySelector('.hero-copy h1');
+        if (!title) {
+          return;
+        }
+
+        const fullText = (title.textContent || '').trim();
+        if (!fullText) {
+          return;
+        }
+
+        if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          return;
+        }
+
+        const typingSpeed = 95;
+        const deletingSpeed = 55;
+        const holdAfterType = 1200;
+        const holdAfterDelete = 420;
+
+        let charIndex = 0;
+        let isDeleting = false;
+
+        title.classList.add('type-loop');
+        title.textContent = '';
+
+        const tick = () => {
+          if (!isDeleting) {
+            charIndex += 1;
+            title.textContent = fullText.slice(0, charIndex);
+
+            if (charIndex >= fullText.length) {
+              isDeleting = true;
+              setTimeout(tick, holdAfterType);
+              return;
+            }
+
+            setTimeout(tick, typingSpeed);
+            return;
+          }
+
+          charIndex -= 1;
+          title.textContent = fullText.slice(0, Math.max(0, charIndex));
+
+          if (charIndex <= 0) {
+            isDeleting = false;
+            setTimeout(tick, holdAfterDelete);
+            return;
+          }
+
+          setTimeout(tick, deletingSpeed);
+        };
+
+        tick();
+      };
+
+      initHeroTitleLoop();
+      initPortfolioCardSliders();
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('show');
+          } else {
+            entry.target.classList.remove('show');
+          }
+        });
+      }, { threshold: 0.15 });
+
+      document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+
+      const backToTop = document.querySelector('.back-to-top');
+      if (backToTop) {
+        backToTop.addEventListener('click', () => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        const toggleBackToTop = () => {
+          if (window.scrollY > 240) {
+            backToTop.classList.add('show');
+          } else {
+            backToTop.classList.remove('show');
+          }
+        };
+
+
+        toggleBackToTop();
+        window.addEventListener('scroll', toggleBackToTop);
+      }
+
+      // Security measure: Prevent context menu (right click) on all elements
+      document.addEventListener('contextmenu', (e) => {
+        if (e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO') {
+          e.preventDefault();
+        }
+      });
+
+      // Prevent dragging of images and videos
+      document.addEventListener('dragstart', (e) => {
+        if (e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO' || e.target.tagName === 'A') {
+          e.preventDefault();
+        }
+      });
+
+    })();
+  </script>
+</body>
+
+</html>

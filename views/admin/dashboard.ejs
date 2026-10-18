@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Admin Dashboard | Portfolio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="/assets/admin/admin.css">
+</head>
+
+<body class="admin-page">
+  <div class="admin-shell">
+    <aside class="admin-sidebar" id="sidebar">
+      <div class="sidebar-head">
+        <span class="brand-mark">RF</span>
+        <div>
+          <strong>Admin</strong>
+          <small id="account-name"><%= account.displayName %></small>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <p class="nav-group">Ringkasan</p>
+        <button type="button" class="nav-item" data-tab="overview">Dashboard</button>
+
+        <p class="nav-group">Isi Halaman Utama</p>
+        <button type="button" class="nav-item" data-tab="meta">Judul Situs</button>
+        <button type="button" class="nav-item" data-tab="hero">Bagian Hero</button>
+        <button type="button" class="nav-item" data-tab="about">Tentang Saya</button>
+        <button type="button" class="nav-item" data-tab="specialties">Keahlian</button>
+        <button type="button" class="nav-item" data-tab="portfolio">Kartu Portfolio</button>
+        <button type="button" class="nav-item" data-tab="experience">Pengalaman Kerja</button>
+        <button type="button" class="nav-item" data-tab="tools">Tools &amp; Software</button>
+        <button type="button" class="nav-item" data-tab="contact">Kontak &amp; Sosial Media</button>
+
+        <p class="nav-group">Halaman Portfolio</p>
+        <button type="button" class="nav-item" data-tab="galleries">Galeri Portfolio</button>
+
+        <p class="nav-group">Lainnya</p>
+        <button type="button" class="nav-item" data-tab="media">Pustaka Media</button>
+        <button type="button" class="nav-item" data-tab="account">Akun &amp; Keamanan</button>
+      </nav>
+
+      <div class="sidebar-foot">
+        <a href="/" target="_blank" rel="noopener" class="sidebar-link">Lihat website ↗</a>
+        <form method="post" action="/admin/logout">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button type="submit" class="sidebar-link danger">Keluar</button>
+        </form>
+      </div>
+    </aside>
+
+    <div class="admin-main">
+      <header class="admin-topbar">
+        <button type="button" class="icon-btn" id="sidebar-toggle" aria-label="Buka menu">☰</button>
+        <div class="topbar-title">
+          <h1 id="tab-title">Dashboard</h1>
+          <p id="tab-subtitle">Ringkasan isi website Anda</p>
+        </div>
+        <div class="topbar-actions" id="topbar-actions"></div>
+      </header>
+
+      <main class="admin-content" id="editor">
+        <div class="loading-card">Memuat data…</div>
+      </main>
+    </div>
+  </div>
+
+  <div class="modal" id="media-modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3>Pilih media</h3>
+        <button type="button" class="modal-close" aria-label="Tutup">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="loading-card">Memuat media…</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-stack" id="toast-stack" aria-live="polite"></div>
+
+  <script>
+    window.ADMIN_BOOTSTRAP = {
+      csrfToken: <%- JSON.stringify(csrfToken) %>,
+      displayName: <%- JSON.stringify(account.displayName) %>,
+      passwordChangedAt: <%- JSON.stringify(account.passwordChangedAt) %>
+    };
+  </script>
+  <script src="/assets/admin/admin.js"></script>
+</body>
+
+</html>
