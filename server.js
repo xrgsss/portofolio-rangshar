@@ -3,56 +3,62 @@
  * ---------------------------------------------------------------------------
  * Satu proses Express yang:
  *   1. Menyajikan website publik (halaman utama + halaman galeri portfolio)
- *      yang isinya dibaca dari data/content.json & data/galleries.json.
+ *      yang isinya dibaca dari Redis (atau data/*.json saat lokal).
  *   2. Menyediakan dashboard admin di /admin untuk CRUD semua isi website,
- *      dilindungi login (bcrypt + session cookie HttpOnly + CSRF + rate limit).
+ *      dilindungi login (bcrypt + cookie session HttpOnly + CSRF + rate limit).
  *
- * Jalankan: npm start
+ * Cara jalan:
+ *   - Lokal     : `npm start` (memakai file data/*.json + folder images/)
+ *   - Vercel    : file ini diekspor sebagai satu Vercel Function; data
+ *                 disimpan di Redis dan media di Vercel Blob.
+ *
+ * Catatan penting untuk Vercel:
+ *   - `express.static()` DIABAIKAN oleh Vercel. Aset statis harus ada di
+ *     folder `public/` (styles.css, assets/admin/*).
+ *   - `app.listen()` hanya dipanggil saat dijalankan langsung dari terminal.
  * ---------------------------------------------------------------------------
  */
 
 const path = require('node:path');
 const express = require('express');
-const session = require('express-session');
+const cookieSession = require('cookie-session');
 
 const auth = require('./lib/auth');
 const { config } = auth;
-const { FileSessionStore } = require('./lib/session-store');
-const { store } = require('./lib/store');
+const store = require('./lib/store').store;
 const schema = require('./lib/schema');
-const uploads = require('./lib/uploads');
+const media = require('./lib/media');
+const redis = require('./lib/redis');
 
 const ROOT = __dirname;
+const PUBLIC_DIR = path.join(ROOT, 'public');
+const IMAGES_DIR = path.join(ROOT, 'images');
+
 const app = express();
 
 app.disable('x-powered-by');
 app.set('view engine', 'ejs');
 app.set('views', path.join(ROOT, 'views'));
-if (config.secureCookie) app.set('trust proxy', 1);
 
 /* ------------------------------------------------------------- middleware */
 
 app.use(express.json({ limit: '4mb' }));
 app.use(express.urlencoded({ extended: false, limit: '2mb' }));
 
+/**
+ * Sesi disimpan di cookie yang ditandatangani (tanpa penyimpanan di server),
+ * karena Vercel tidak punya disk permanen. Isi cookie: user, waktu login, dan
+ * token CSRF — ketiganya tidak sensitif untuk dibaca server sendiri.
+ */
 app.use(
-  session({
+  cookieSession({
     name: 'portfolio.sid',
-    secret: config.sessionSecret,
-    store: new FileSessionStore({
-      dir: path.join(ROOT, '.sessions'),
-      ttl: 8 * 60 * 60 * 1000, // 8 jam
-    }),
-    resave: false,
-    saveUninitialized: false,
-    rolling: true,
-    cookie: {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: config.secureCookie,
-      maxAge: 8 * 60 * 60 * 1000,
-      path: '/',
-    },
+    keys: [config.sessionSecret],
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: config.secureCookie,
+    path: '/',
+    maxAge: 8 * 60 * 60 * 1000, // 8 jam
   })
 );
 
@@ -67,17 +73,18 @@ app.use((req, res, next) => {
 
 /* ------------------------------------------------------- aset statis aman */
 
-// Folder images/ dan styles.css dilayani langsung. Hanya itu yang dibuka,
-// sehingga server.js, .env, dan data/*.json tidak pernah bisa diunduh.
-app.use(
-  '/images',
-  express.static(path.join(ROOT, 'images'), { dotfiles: 'ignore', maxAge: '7d', index: false })
-);
-app.use(
-  '/assets',
-  express.static(path.join(ROOT, 'public'), { dotfiles: 'ignore', maxAge: '1h', index: false })
-);
-app.get('/styles.css', (req, res) => res.sendFile(path.join(ROOT, 'styles.css')));
+/**
+ * Di Vercel, folder `public/` otomatis dilayani langsung dari CDN dan
+ * middleware di bawah ini diabaikan — jadi tidak ada perbedaan hasil.
+ * Di lokal, middleware inilah yang melayani /styles.css dan /assets/admin/*.
+ */
+app.use(express.static(PUBLIC_DIR, { dotfiles: 'ignore', maxAge: '1h', index: false }));
+
+/**
+ * Folder images/ hanya untuk pengembangan lokal (media lama). Di Vercel
+ * media sudah dipindahkan ke Blob, sehingga folder ini tidak ikut ter-deploy.
+ */
+app.use('/images', express.static(IMAGES_DIR, { dotfiles: 'ignore', maxAge: '7d', index: false }));
 
 app.get('/robots.txt', (req, res) => {
   res.type('text/plain').send('User-agent: *\nDisallow: /admin\n');
@@ -86,6 +93,9 @@ app.get('/robots.txt', (req, res) => {
 app.get('/favicon.ico', (req, res) => res.status(204).end());
 
 /* -------------------------------------------------------------- helpers */
+
+/** Bungkus handler async supaya error-nya sampai ke middleware error Express. */
+const wrap = (handler) => (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
 
 /** Ambil daftar gambar dari sebuah galeri (untuk slider kartu di halaman utama). */
 const galleryImages = (gallery, limit = 6) => {
@@ -99,8 +109,8 @@ const galleryImages = (gallery, limit = 6) => {
   return [...new Set(list)].slice(0, limit);
 };
 
-const findGalleryByFile = (fileName) => {
-  const galleries = store.getGalleries();
+const findGalleryByFile = async (fileName) => {
+  const galleries = await store.getGalleries();
   return Object.values(galleries).find((gallery) => gallery.file === fileName) || null;
 };
 
@@ -109,45 +119,51 @@ const renderLoginPage = (res, { error = '', notice = '', status = 200, next = ''
 
 /* =================================================== HALAMAN PUBLIK ==== */
 
-app.get('/', (req, res) => {
-  const content = store.getContent();
-  const galleries = store.getGalleries();
+app.get(
+  '/',
+  wrap(async (req, res) => {
+    const content = await store.getContent();
+    const galleries = await store.getGalleries();
 
-  const cards = content.portfolio.items.map((item) => {
-    const gallery = item.galleryId ? galleries[item.galleryId] : null;
-    const fromGallery = galleryImages(gallery);
-    const cover = item.cover || fromGallery[0] || '';
-    const images = [...new Set([cover, ...fromGallery].filter(Boolean))];
-    return { ...item, cover, images };
-  });
+    const cards = (content.portfolio.items || []).map((item) => {
+      const gallery = item.galleryId ? galleries[item.galleryId] : null;
+      const fromGallery = galleryImages(gallery);
+      const cover = item.cover || fromGallery[0] || '';
+      const images = [...new Set([cover, ...fromGallery].filter(Boolean))];
+      return { ...item, cover, images };
+    });
 
-  res.render('index', {
-    content,
-    cards,
-    pageTitle: content.meta.siteTitle || 'Portfolio',
-  });
-});
+    res.render('index', {
+      content,
+      cards,
+      pageTitle: content.meta.siteTitle || 'Portfolio',
+    });
+  })
+);
 
 // URL lama tetap bekerja (dipakai oleh tautan antar halaman).
 app.get('/index.html', (req, res) => res.redirect(302, '/'));
 
-app.get(/^\/portfolio-([a-z0-9_-]+)\.html$/i, (req, res) => {
-  const fileName = `portfolio-${req.params[0].toLowerCase()}.html`;
-  const gallery = findGalleryByFile(fileName);
-  if (!gallery) return res.status(404).render('not-found', { pageTitle: 'Halaman tidak ditemukan' });
+app.get(
+  /^\/portfolio-([a-z0-9_-]+)\.html$/i,
+  wrap(async (req, res) => {
+    const fileName = `portfolio-${req.params[0].toLowerCase()}.html`;
+    const gallery = await findGalleryByFile(fileName);
+    if (!gallery) return res.status(404).render('not-found', { pageTitle: 'Halaman tidak ditemukan' });
 
-  const content = store.getContent();
-  const hasLightboxItems = gallery.sections.some((section) =>
-    section.items.some((item) => !item.href)
-  );
+    const content = await store.getContent();
+    const hasLightboxItems = (gallery.sections || []).some((section) =>
+      (section.items || []).some((item) => !item.href)
+    );
 
-  res.render('gallery', {
-    gallery,
-    hasLightboxItems,
-    contact: content.contact,
-    pageTitle: `${gallery.title} | Portfolio`,
-  });
-});
+    return res.render('gallery', {
+      gallery,
+      hasLightboxItems,
+      contact: content.contact,
+      pageTitle: `${gallery.title} | Portfolio`,
+    });
+  })
+);
 
 /* ==================================================== LOGIN & SESSION === */
 
@@ -159,61 +175,68 @@ app.get('/admin/login', (req, res) => {
   });
 });
 
-app.post('/admin/login', async (req, res) => {
-  const nextParam = typeof req.body.next === 'string' ? req.body.next : '';
-  const safeNext = nextParam.startsWith('/admin') ? nextParam : '/admin';
+app.post(
+  '/admin/login',
+  wrap(async (req, res) => {
+    const nextParam = typeof req.body.next === 'string' ? req.body.next : '';
+    const safeNext = nextParam.startsWith('/admin') ? nextParam : '/admin';
 
-  const rateKey = `login:${req.ip}`;
-  const limit = auth.checkRateLimit(rateKey);
+    const rateKey = `login:${req.ip}`;
+    const limit = await auth.checkRateLimit(rateKey);
 
-  if (limit.blocked) {
-    return renderLoginPage(res, {
-      status: 429,
-      next: safeNext,
-      error: `Terlalu banyak percobaan gagal. Coba lagi dalam ${Math.ceil(limit.retryAfterSeconds / 60)} menit.`,
-    });
-  }
+    if (limit.blocked) {
+      return renderLoginPage(res, {
+        status: 429,
+        next: safeNext,
+        error: `Terlalu banyak percobaan gagal. Coba lagi dalam ${Math.ceil(limit.retryAfterSeconds / 60)} menit.`,
+      });
+    }
 
-  const username = req.body.username;
-  const password = req.body.password;
+    const username = req.body.username;
+    const password = req.body.password;
 
-  if (!username || !password) {
-    return renderLoginPage(res, { status: 400, next: safeNext, error: 'Username dan password wajib diisi.' });
-  }
+    if (!username || !password) {
+      return renderLoginPage(res, { status: 400, next: safeNext, error: 'Username dan password wajib diisi.' });
+    }
 
-  let ok = false;
-  try {
-    ok = await auth.verifyCredentials(username, password);
-  } catch {
-    ok = false;
-  }
+    let ok = false;
+    try {
+      ok = await auth.verifyCredentials(username, password);
+    } catch {
+      ok = false;
+    }
 
-  if (!ok) {
-    const after = auth.recordFailure(rateKey);
-    const remaining = after.remaining;
-    return renderLoginPage(res, {
-      status: 401,
-      next: safeNext,
-      error:
-        remaining > 0
-          ? `Username atau password salah. Sisa percobaan: ${remaining}.`
-          : 'Terlalu banyak percobaan gagal. Akun dikunci sementara selama 15 menit.',
-    });
-  }
+    if (!ok) {
+      const after = await auth.recordFailure(rateKey);
+      const remaining = after.remaining;
+      return renderLoginPage(res, {
+        status: 401,
+        next: safeNext,
+        error:
+          remaining > 0
+            ? `Username atau password salah. Sisa percobaan: ${remaining}.`
+            : 'Terlalu banyak percobaan gagal. Akun dikunci sementara selama 15 menit.',
+      });
+    }
 
-  auth.clearFailures(rateKey);
-  await auth.login(req, String(username).trim());
-  return res.redirect(safeNext);
-});
+    await auth.clearFailures(rateKey);
+    await auth.login(req, String(username).trim());
+    return res.redirect(safeNext);
+  })
+);
 
-app.post('/admin/logout', auth.requireAuthPage, async (req, res) => {
-  const token = req.body._csrf || req.get('x-csrf-token') || '';
-  if (token && token === auth.getCsrfToken(req)) {
-    await auth.logout(req);
-    return res.redirect('/admin/login?notice=' + encodeURIComponent('Anda sudah keluar.'));
-  }
-  return res.redirect('/admin');
-});
+app.post(
+  '/admin/logout',
+  auth.requireAuthPage,
+  wrap(async (req, res) => {
+    const token = req.body._csrf || req.get('x-csrf-token') || '';
+    if (token && token === auth.getCsrfToken(req)) {
+      auth.logout(req);
+      return res.redirect('/admin/login?notice=' + encodeURIComponent('Anda sudah keluar.'));
+    }
+    return res.redirect('/admin');
+  })
+);
 
 app.get('/admin', auth.requireAuthPage, (req, res) => {
   res.render('admin/dashboard', {
@@ -230,187 +253,250 @@ app.get('/admin/*', auth.requireAuthPage, (req, res) => res.redirect('/admin'));
 const api = express.Router();
 api.use(auth.requireAuthApi);
 
-api.get('/session', (req, res) => {
-  const galleries = store.getGalleries();
-  const content = store.getContent();
-  const galleryItems = Object.values(galleries).reduce(
-    (total, gallery) => total + (gallery.sections || []).reduce((sum, s) => sum + (s.items || []).length, 0),
-    0
-  );
+api.get(
+  '/session',
+  wrap(async (req, res) => {
+    const galleries = await store.getGalleries();
+    const content = await store.getContent();
+    const galleryItems = Object.values(galleries).reduce(
+      (total, gallery) => total + (gallery.sections || []).reduce((sum, s) => sum + (s.items || []).length, 0),
+      0
+    );
 
-  res.json({
-    ok: true,
-    account: auth.getCredentials(),
-    csrfToken: auth.getCsrfToken(req),
-    stats: {
-      portfolio: content.portfolio.items.length,
-      specialties: content.specialties.items.length,
-      experience: content.experience.items.length,
-      tools: content.tools.items.length,
-      galleries: Object.keys(galleries).length,
-      galleryItems,
-    },
-  });
-});
+    res.json({
+      ok: true,
+      account: auth.getCredentials(),
+      csrfToken: auth.getCsrfToken(req),
+      stats: {
+        portfolio: (content.portfolio.items || []).length,
+        specialties: (content.specialties.items || []).length,
+        experience: (content.experience.items || []).length,
+        tools: (content.tools.items || []).length,
+        galleries: Object.keys(galleries).length,
+        galleryItems,
+      },
+      // Membantu memastikan penyimpanan sudah terhubung dengan benar.
+      storage: {
+        data: store.isRemote() ? `redis (${redis.transportName()})` : 'file-lokal',
+        media: media.isConfigured() ? 'vercel-blob' : 'folder-lokal (images/)',
+        rateLimit: redis.isConfigured() ? `redis (${redis.transportName()})` : 'memori',
+      },
+    });
+  })
+);
 
-api.get('/content', (req, res) => res.json({ ok: true, content: store.getContent() }));
+api.get(
+  '/content',
+  wrap(async (req, res) => res.json({ ok: true, content: await store.getContent() }))
+);
 
-api.put('/content/:section', auth.requireCsrf, async (req, res) => {
-  const section = String(req.params.section || '');
-  const sanitizer = schema.CONTENT_SECTIONS[section];
+api.put(
+  '/content/:section',
+  auth.requireCsrf,
+  wrap(async (req, res) => {
+    const section = String(req.params.section || '');
+    const sanitizer = schema.CONTENT_SECTIONS[section];
 
-  if (!sanitizer) {
-    return res.status(400).json({ ok: false, error: `Bagian "${section}" tidak dikenal.` });
-  }
+    if (!sanitizer) {
+      return res.status(400).json({ ok: false, error: `Bagian "${section}" tidak dikenal.` });
+    }
 
-  const content = store.getContent();
-  content[section] = sanitizer(req.body);
+    const content = await store.getContent();
+    content[section] = sanitizer(req.body);
 
-  try {
-    await store.saveContent(content);
-  } catch (error) {
-    return res.status(500).json({ ok: false, error: `Gagal menyimpan: ${error.message}` });
-  }
+    try {
+      await store.saveContent(content);
+    } catch (error) {
+      return res.status(500).json({ ok: false, error: `Gagal menyimpan: ${error.message}` });
+    }
 
-  return res.json({ ok: true, section, value: content[section] });
-});
+    return res.json({ ok: true, section, value: content[section] });
+  })
+);
 
-api.get('/galleries', (req, res) => res.json({ ok: true, galleries: store.getGalleries() }));
+api.get(
+  '/galleries',
+  wrap(async (req, res) => res.json({ ok: true, galleries: await store.getGalleries() }))
+);
 
-api.put('/galleries/:id', auth.requireCsrf, async (req, res) => {
-  const galleries = store.getGalleries();
-  const existing = galleries[req.params.id];
+api.put(
+  '/galleries/:id',
+  auth.requireCsrf,
+  wrap(async (req, res) => {
+    const galleries = await store.getGalleries();
+    const existing = galleries[req.params.id];
 
-  if (!existing) return res.status(404).json({ ok: false, error: 'Halaman galeri tidak ditemukan.' });
+    if (!existing) return res.status(404).json({ ok: false, error: 'Halaman galeri tidak ditemukan.' });
 
-  galleries[req.params.id] = schema.sanitizeGallery(req.body, existing);
+    galleries[req.params.id] = schema.sanitizeGallery(req.body, existing);
 
-  try {
-    await store.saveGalleries(galleries);
-  } catch (error) {
-    return res.status(500).json({ ok: false, error: `Gagal menyimpan: ${error.message}` });
-  }
+    try {
+      await store.saveGalleries(galleries);
+    } catch (error) {
+      return res.status(500).json({ ok: false, error: `Gagal menyimpan: ${error.message}` });
+    }
 
-  return res.json({ ok: true, gallery: galleries[req.params.id] });
-});
+    return res.json({ ok: true, gallery: galleries[req.params.id] });
+  })
+);
 
 /* -------------------------------------------------------------- uploads */
 
-api.post('/uploads', auth.requireCsrf, (req, res) => {
-  uploads.upload.single('file')(req, res, (error) => {
-    if (error) {
-      const message =
-        error.code === 'LIMIT_FILE_SIZE'
-          ? `Ukuran file terlalu besar (maksimal ${Math.round(uploads.MAX_FILE_SIZE / 1024 / 1024)} MB).`
-          : error.message;
-      return res.status(400).json({ ok: false, error: message });
+/**
+ * Unggahan dilakukan browser langsung ke Vercel Blob memakai URL bertanda
+ * tangan, karena body request function dibatasi 4.5 MB sedangkan berkas di
+ * sini boleh sampai 40 MB.
+ *
+ *   1. POST /api/media/upload-url     -> dapat URL unggahan bertanda tangan
+ *   2. PUT  <uploadUrl> (dari browser) -> berkas dikirim langsung ke Blob
+ *   3. POST /api/media/upload-confirm -> server mengambil URL publik resminya
+ */
+api.post(
+  '/media/upload-url',
+  auth.requireCsrf,
+  wrap(async (req, res) => {
+    try {
+      const ticket = await media.createUploadTicket({
+        name: req.body && req.body.name,
+        type: req.body && req.body.type,
+        size: Number(req.body && req.body.size),
+      });
+      return res.json({ ok: true, ...ticket });
+    } catch (error) {
+      return res.status(400).json({ ok: false, error: error.message });
     }
-    if (!req.file) return res.status(400).json({ ok: false, error: 'Tidak ada file yang dikirim.' });
+  })
+);
 
-    return res.json({
+api.post(
+  '/media/upload-confirm',
+  auth.requireCsrf,
+  wrap(async (req, res) => {
+    try {
+      const file = await media.confirmUpload(req.body && req.body.pathname);
+      return res.json({ ok: true, ...file });
+    } catch (error) {
+      return res.status(400).json({ ok: false, error: error.message });
+    }
+  })
+);
+
+api.get(
+  '/media',
+  wrap(async (req, res) => {
+    const [uploads, library] = await Promise.all([media.listUploads(), media.listMediaLibrary()]);
+    res.json({
       ok: true,
-      url: uploads.toPublicUrl(req.file.path),
-      name: req.file.filename,
-      size: req.file.size,
+      uploads,
+      library,
+      maxFileSize: media.MAX_FILE_SIZE,
+      blobConfigured: media.isConfigured(),
     });
-  });
-});
+  })
+);
 
-api.get('/media', (req, res) => {
-  res.json({ ok: true, uploads: uploads.listUploads(), library: uploads.listMediaLibrary() });
-});
-
-api.delete('/media', auth.requireCsrf, (req, res) => {
-  try {
-    const removed = uploads.removeUpload(req.body && req.body.url);
-    return res.json({ ok: true, removed });
-  } catch (error) {
-    return res.status(400).json({ ok: false, error: error.message });
-  }
-});
+api.delete(
+  '/media',
+  auth.requireCsrf,
+  wrap(async (req, res) => {
+    try {
+      const removed = await media.removeUpload(req.body && req.body.url);
+      return res.json({ ok: true, removed });
+    } catch (error) {
+      return res.status(400).json({ ok: false, error: error.message });
+    }
+  })
+);
 
 /* ------------------------------------------------------- ganti password */
 
-api.post('/password', auth.requireCsrf, async (req, res) => {
-  const current = String((req.body && req.body.currentPassword) || '');
-  const next = String((req.body && req.body.newPassword) || '');
-  const confirm = String((req.body && req.body.confirmPassword) || '');
+api.post(
+  '/password',
+  auth.requireCsrf,
+  wrap(async (req, res) => {
+    const current = String((req.body && req.body.currentPassword) || '');
+    const next = String((req.body && req.body.newPassword) || '');
+    const confirm = String((req.body && req.body.confirmPassword) || '');
 
-  if (!current || !next) {
-    return res.status(400).json({ ok: false, error: 'Password lama dan password baru wajib diisi.' });
-  }
-  if (next !== confirm) {
-    return res.status(400).json({ ok: false, error: 'Konfirmasi password baru tidak sama.' });
-  }
-  if (next.length < 10 || !/[A-Za-z]/.test(next) || !/[0-9]/.test(next)) {
-    return res
-      .status(400)
-      .json({ ok: false, error: 'Password baru minimal 10 karakter dan harus berisi huruf serta angka.' });
-  }
-  if (current === next) {
-    return res.status(400).json({ ok: false, error: 'Password baru harus berbeda dari password lama.' });
-  }
+    if (!current || !next) {
+      return res.status(400).json({ ok: false, error: 'Password lama dan password baru wajib diisi.' });
+    }
+    if (next !== confirm) {
+      return res.status(400).json({ ok: false, error: 'Konfirmasi password baru tidak sama.' });
+    }
+    if (next.length < 10 || !/[A-Za-z]/.test(next) || !/[0-9]/.test(next)) {
+      return res
+        .status(400)
+        .json({ ok: false, error: 'Password baru minimal 10 karakter dan harus berisi huruf serta angka.' });
+    }
+    if (current === next) {
+      return res.status(400).json({ ok: false, error: 'Password baru harus berbeda dari password lama.' });
+    }
 
-  const currentOk = await auth.verifyCredentials(auth.getCredentials().user, current);
-  if (!currentOk) return res.status(401).json({ ok: false, error: 'Password lama salah.' });
+    const currentOk = await auth.verifyCredentials(auth.getCredentials().user, current);
+    if (!currentOk) return res.status(401).json({ ok: false, error: 'Password lama salah.' });
 
-  const hash = auth.setPassword(next);
-  const { setEnvValue } = require('./lib/config');
-  setEnvValue('ADMIN_PASSWORD_HASH', hash);
+    await auth.setPassword(next);
 
-  // Perbarui token CSRF setelah password berubah.
-  if (req.session && req.session.admin) {
-    req.session.admin.csrf = require('node:crypto').randomBytes(32).toString('hex');
-  }
+    // Perbarui token CSRF setelah password berubah.
+    const csrfToken = auth.rotateCsrfToken(req) || auth.getCsrfToken(req);
 
-  return res.json({ ok: true, csrfToken: auth.getCsrfToken(req), message: 'Password berhasil diganti.' });
-});
+    return res.json({ ok: true, csrfToken, message: 'Password berhasil diganti.' });
+  })
+);
 
 /* --------------------------------------------------------- backup data */
 
-api.get('/export', (req, res) => {
-  const payload = {
-    exportedAt: new Date().toISOString(),
-    version: 1,
-    content: store.getContent(),
-    galleries: store.getGalleries(),
-  };
+api.get(
+  '/export',
+  wrap(async (req, res) => {
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      version: 1,
+      content: await store.getContent(),
+      galleries: await store.getGalleries(),
+    };
 
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
-  res.setHeader(
-    'Content-Disposition',
-    `attachment; filename="portfolio-backup-${new Date().toISOString().slice(0, 10)}.json"`
-  );
-  res.send(JSON.stringify(payload, null, 2));
-});
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="portfolio-backup-${new Date().toISOString().slice(0, 10)}.json"`
+    );
+    res.send(JSON.stringify(payload, null, 2));
+  })
+);
 
-api.post('/import', auth.requireCsrf, async (req, res) => {
-  const body = req.body || {};
-  if (!body.content || typeof body.content !== 'object') {
-    return res.status(400).json({ ok: false, error: 'File backup tidak valid (bagian "content" tidak ada).' });
-  }
-
-  // Semua bagian tetap dibersihkan lewat skema yang sama seperti input manual.
-  const cleaned = {};
-  for (const [section, sanitizer] of Object.entries(schema.CONTENT_SECTIONS)) {
-    cleaned[section] = sanitizer(body.content[section] || {});
-  }
-
-  const currentGalleries = store.getGalleries();
-  const nextGalleries = { ...currentGalleries };
-  if (body.galleries && typeof body.galleries === 'object') {
-    for (const [id, gallery] of Object.entries(body.galleries)) {
-      const existing = currentGalleries[id];
-      if (!existing) continue; // halaman galeri hanya yang sudah dikenal
-      nextGalleries[id] = schema.sanitizeGallery(gallery, existing);
+api.post(
+  '/import',
+  auth.requireCsrf,
+  wrap(async (req, res) => {
+    const body = req.body || {};
+    if (!body.content || typeof body.content !== 'object') {
+      return res.status(400).json({ ok: false, error: 'File backup tidak valid (bagian "content" tidak ada).' });
     }
-  }
 
-  await store.saveContent(cleaned);
-  await store.saveGalleries(nextGalleries);
+    // Semua bagian tetap dibersihkan lewat skema yang sama seperti input manual.
+    const cleaned = {};
+    for (const [section, sanitizer] of Object.entries(schema.CONTENT_SECTIONS)) {
+      cleaned[section] = sanitizer(body.content[section] || {});
+    }
 
-  return res.json({ ok: true, message: 'Data berhasil dipulihkan dari backup.' });
-});
+    const currentGalleries = await store.getGalleries();
+    const nextGalleries = { ...currentGalleries };
+    if (body.galleries && typeof body.galleries === 'object') {
+      for (const [id, gallery] of Object.entries(body.galleries)) {
+        const existing = currentGalleries[id];
+        if (!existing) continue; // halaman galeri hanya yang sudah dikenal
+        nextGalleries[id] = schema.sanitizeGallery(gallery, existing);
+      }
+    }
+
+    await store.saveContent(cleaned);
+    await store.saveGalleries(nextGalleries);
+
+    return res.json({ ok: true, message: 'Data berhasil dipulihkan dari backup.' });
+  })
+);
 
 app.use('/api', api);
 
@@ -422,45 +508,33 @@ app.use((req, res) => res.status(404).render('not-found', { pageTitle: 'Halaman 
 
 // eslint-disable-next-line no-unused-vars
 app.use((error, req, res, next) => {
-  console.error('✖  Error:', error.message);
-  if (req.path.startsWith('/api/')) {
-    return res.status(500).json({ ok: false, error: 'Terjadi kesalahan di server.' });
+  // Body yang tidak bisa dibaca (mis. JSON rusak atau Content-Type keliru)
+  // adalah kesalahan pengirim, bukan kesalahan server — jangan dilaporkan
+  // sebagai 500 supaya penyebabnya tidak menyesatkan.
+  const status = Number(error.status || error.statusCode) >= 400 && Number(error.status || error.statusCode) < 500
+    ? Number(error.status || error.statusCode)
+    : 500;
+
+  console.error(`✖  Error (${status}):`, error.message);
+
+  if (status === 500) {
+    return req.path.startsWith('/api/')
+      ? res.status(500).json({ ok: false, error: 'Terjadi kesalahan di server.' })
+      : res.status(500).type('text/plain').send('Terjadi kesalahan di server.');
   }
-  return res.status(500).type('text/plain').send('Terjadi kesalahan di server.');
+
+  return req.path.startsWith('/api/')
+    ? res.status(status).json({ ok: false, error: 'Data yang dikirim tidak bisa dibaca.' })
+    : res.status(status).type('text/plain').send('Data yang dikirim tidak bisa dibaca.');
 });
 
 /* ============================================================= start ==== */
 
-const server = app.listen(config.port, () => {
-  const line = '─'.repeat(64);
-  console.log(`\n${line}`);
-  console.log('  Website Portofolio — Rangga Febrianto');
-  console.log(line);
-  console.log(`\n  Website  : http://localhost:${config.port}/`);
-  console.log(`  Admin    : http://localhost:${config.port}/admin`);
-  console.log(`${line}`);
-  console.log('  Hentikan server dengan Ctrl+C.');
-  console.log(`${line}\n`);
-});
-
-server.on('error', (error) => {
-  const line = '─'.repeat(64);
-  console.log(`\n${line}`);
-  if (error.code === 'EADDRINUSE') {
-    console.error(`  ✖  Port ${config.port} sedang dipakai proses lain.`);
-    console.error('     Tutup aplikasi lain yang memakai port itu, atau jalankan');
-    console.error(`     dengan port berbeda, misalnya:  PORT=3001 npm start`);
-  } else if (error.code === 'EACCES') {
-    console.error(`  ✖  Tidak punya izin memakai port ${config.port}. Coba port lain (mis. 3001).`);
-  } else {
-    console.error(`  ✖  Server gagal dijalankan: ${error.message}`);
-  }
-  console.log(`${line}\n`);
-  process.exit(1);
-});
+for (const notice of config.notices) console.log(`  ℹ  ${notice}`);
 
 /* Kredensial yang baru dibuat dicetak SEBELUM server menyala, supaya tidak
-   pernah hilang walau server gagal start. */
+   pernah hilang walau server gagal start. Hanya terjadi saat lokal karena
+   di Vercel password diambil dari environment variable. */
 if (config.generated) {
   const line = '═'.repeat(64);
   console.log(`\n${line}`);
@@ -474,12 +548,48 @@ if (config.generated) {
   console.log(`${line}\n`);
 }
 
-for (const notice of config.notices) console.log(`  ℹ  ${notice}`);
+/**
+ * Di Vercel, file ini dijalankan sebagai satu function: cukup mengekspor app
+ * dan JANGAN memanggil listen (Vercel yang menyediakan soketnya).
+ */
+module.exports = app;
 
-const shutdown = () => {
-  server.close(() => process.exit(0));
-  setTimeout(() => process.exit(0), 3000);
-};
+if (require.main === module) {
+  const server = app.listen(config.port, () => {
+    const line = '─'.repeat(64);
+    console.log(`\n${line}`);
+    console.log('  Website Portofolio — Rangga Febrianto');
+    console.log(line);
+    console.log(`\n  Website  : http://localhost:${config.port}/`);
+    console.log(`  Admin    : http://localhost:${config.port}/admin`);
+    console.log(`  Data     : ${store.isRemote() ? 'Redis' : 'file data/*.json'}`);
+    console.log(`  Media    : ${media.isConfigured() ? 'Vercel Blob' : 'folder images/'}`);
+    console.log(`${line}`);
+    console.log('  Hentikan server dengan Ctrl+C.');
+    console.log(`${line}\n`);
+  });
 
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
+  server.on('error', (error) => {
+    const line = '─'.repeat(64);
+    console.log(`\n${line}`);
+    if (error.code === 'EADDRINUSE') {
+      console.error(`  ✖  Port ${config.port} sedang dipakai proses lain.`);
+      console.error('     Tutup aplikasi lain yang memakai port itu, atau jalankan');
+      console.error(`     dengan port berbeda, misalnya:  PORT=3001 npm start`);
+    } else if (error.code === 'EACCES') {
+      console.error(`  ✖  Tidak punya izin memakai port ${config.port}. Coba port lain (mis. 3001).`);
+    } else {
+      console.error(`  ✖  Server gagal dijalankan: ${error.message}`);
+    }
+    console.log(`${line}\n`);
+    process.exit(1);
+  });
+
+  const shutdown = () => {
+    server.close(() => process.exit(0));
+    setTimeout(() => process.exit(0), 3000);
+  };
+
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
+}

@@ -9,17 +9,21 @@
     "dev": "node --watch server.js",
     "seed": "node scripts/seed.mjs",
     "hash": "node scripts/hash-password.mjs",
-    "setup": "node scripts/setup.mjs"
+    "setup": "node scripts/setup.mjs",
+    "migrate:media": "node scripts/migrate-media.mjs",
+    "migrate:kv": "node scripts/migrate-kv.mjs"
   },
   "dependencies": {
+    "@upstash/redis": "^1.39.0",
+    "@vercel/blob": "^2.8.2",
     "bcryptjs": "^2.4.3",
+    "cookie-session": "^2.1.1",
     "dotenv": "^16.4.7",
     "ejs": "^3.1.10",
     "express": "^4.21.2",
-    "express-session": "^1.18.1",
-    "multer": "^2.0.0"
+    "ioredis": "^5.11.1"
   },
   "engines": {
-    "node": ">=18"
+    "node": "24.x"
   }
 }

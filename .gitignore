@@ -1,12 +1,18 @@
 node_modules/
 .env
+.env.local
+.env.*.local
 !.env.example
 
-# Runtime session files
+# Runtime session files (hanya dipakai versi lama)
 .sessions/
 
-# Uploaded files (uncomment if you do not want uploads in the repo)
-# images/uploads/
+# Media lokal. Setelah `npm run migrate:media`, semua berkas ini sudah berada
+# di Vercel Blob dan tidak perlu ikut ke Git lagi.
+images/
+
+# Konfigurasi Vercel lokal
+.vercel/
 
 # OS / editor noise
 .DS_Store
@@ -16,3 +22,9 @@ desktop.ini
 .vscode/
 *.log
 npm-debug.log*
+
+# Ditaruh paling bawah dengan sengaja: Vercel CLI menambahkan baris ".env*"
+# setiap kali `vercel env pull` dijalankan, dan pola terakhir yang menang.
+# Baris ini memastikan berkas contoh tetap ikut ter-commit.
+!.env.example
+.env*

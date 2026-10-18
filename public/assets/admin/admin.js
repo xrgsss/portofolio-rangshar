@@ -8,7 +8,8 @@
      GET  /api/galleries            -> seluruh halaman galeri
      PUT  /api/galleries/:id        -> simpan satu halaman galeri
      GET  /api/media                -> daftar berkas terunggah + seluruh media
-     POST /api/uploads              -> unggah berkas
+     POST /api/media/upload-url     -> URL unggahan bertanda tangan (langkah 1)
+     POST /api/media/upload-confirm -> ambil URL publik hasil unggahan (langkah 3)
      DELETE /api/media              -> hapus berkas unggahan
      POST /api/password             -> ganti password admin
      GET  /api/export               -> unduh backup JSON
@@ -129,7 +130,6 @@
     put: (url, body) => request('PUT', url, { body }),
     post: (url, body) => request('POST', url, { body }),
     del: (url, body) => request('DELETE', url, { body }),
-    upload: (url, formData) => request('POST', url, { formData }),
   };
 
   /* ================================================================ toast == */
@@ -1021,6 +1021,35 @@
     if (preview) preview.innerHTML = previewInner(source);
   };
 
+  /**
+   * Unggah berkas ke Vercel Blob dalam tiga langkah. Berkasnya dikirim
+   * langsung dari browser ke Blob (bukan lewat server) supaya ukuran berkas
+   * tidak dibatasi 4.5 MB seperti body request Vercel Function.
+   */
+  const uploadToBlob = async (file) => {
+    const ticket = await api.post('/api/media/upload-url', {
+      name: file.name,
+      type: file.type,
+      size: file.size,
+    });
+
+    const response = await fetch(ticket.uploadUrl, {
+      method: 'PUT',
+      headers: { 'content-type': ticket.contentType || file.type || 'application/octet-stream' },
+      body: file,
+    });
+
+    if (!response.ok) {
+      const detail = await response.text().catch(() => '');
+      throw new Error(
+        `Gagal mengunggah berkas ke penyimpanan (${response.status}). ${detail.slice(0, 200)}`.trim()
+      );
+    }
+
+    const confirmed = await api.post('/api/media/upload-confirm', { pathname: ticket.pathname });
+    return confirmed.url;
+  };
+
   const uploadFile = async (file, path) => {
     const status = document.querySelector(`[data-upload-status="${path}"]`);
     if (status) {
@@ -1028,16 +1057,13 @@
       status.textContent = `Mengunggah ${file.name}…`;
     }
 
-    const formData = new FormData();
-    formData.append('file', file);
-
     try {
-      const response = await api.upload('/api/uploads', formData);
+      const url = await uploadToBlob(file);
       const input = document.querySelector(`[data-path="${path}"]`);
-      if (input) input.value = response.url;
-      updatePreview(path, response.url);
+      if (input) input.value = url;
+      updatePreview(path, url);
       if (status) {
-        status.textContent = `Selesai: ${response.url}`;
+        status.textContent = `Selesai: ${url}`;
         status.className = 'upload-status';
       }
       markDirty();
@@ -1071,7 +1097,7 @@
     const body = document.querySelector('#media-modal .modal-body');
     const items = [
       ...state.uploads.map((file) => ({ ...file, group: 'uploads' })),
-      ...state.library.map((file) => ({ ...file, group: 'library', size: 0 })),
+      ...state.library.map((file) => ({ ...file, group: 'library' })),
     ];
 
     body.innerHTML = `
@@ -1207,9 +1233,7 @@
       input.addEventListener('change', async () => {
         if (!input.files[0]) return;
         try {
-          const formData = new FormData();
-          formData.append('file', input.files[0]);
-          await api.upload('/api/uploads', formData);
+          await uploadToBlob(input.files[0]);
           toast('Berkas berhasil diunggah.');
           await loadMedia();
           renderTab();
