@@ -79,8 +79,8 @@ const main = async () => {
     password = await askHidden('Password admin baru: ');
   }
 
-  if (!password || password.length < 10) {
-    console.error('✖  Password minimal 10 karakter.');
+  if (!password || password.length < 6) {
+    console.error('✖  Password minimal 6 karakter.');
     process.exit(1);
   }
 
