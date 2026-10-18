@@ -76,6 +76,24 @@ const walk = (dir) => {
 const pathnameFor = (relative) =>
   relative.startsWith('images/uploads/') ? relative.replace(/^images\//, '') : relative;
 
+/**
+ * Bentuk alamat paling aman: setiap segmen di-encode penuh, termasuk karakter
+ * yang biasanya dibiarkan oleh encodeURI/encodeURIComponent ( ! ' ( ) * ).
+ *
+ * Perlu varian ketiga karena `encodeURI` TIDAK mengubah tanda kurung, padahal
+ * data lama sebagian memakai bentuk %28 / %29 (mis. "Screenshot (1240).png").
+ */
+const fullyEncodedPath = (relative) =>
+  relative
+    .split('/')
+    .map((segment) =>
+      encodeURIComponent(segment).replace(
+        /[!'()*]/g,
+        (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`
+      )
+    )
+    .join('/');
+
 /** Ganti semua string di dalam JSON yang isinya alamat media lokal. */
 const rewriteUrls = (value, map) => {
   let replaced = 0;
@@ -175,6 +193,7 @@ const main = async () => {
 
     map.set(relative, url);
     map.set(encodeURI(relative).replace(/#/g, '%23'), url);
+    map.set(fullyEncodedPath(relative).replace(/#/g, '%23'), url);
   }
 
   console.log('─'.repeat(64));

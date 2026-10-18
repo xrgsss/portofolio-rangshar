@@ -38,12 +38,16 @@ const readJson = (file) => {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 };
 
-/** Hitung alamat media yang masih menunjuk ke folder lokal. */
+/**
+ * Hitung alamat media yang masih menunjuk ke folder lokal.
+ * Alamat Blob juga mengandung "/images/", jadi patokannya adalah path relatif
+ * (tanpa skema http/https).
+ */
 const countLocalImagePaths = (value) => {
   let total = 0;
   const walk = (node) => {
     if (typeof node === 'string') {
-      if (/(^|\/)images\//.test(node)) total += 1;
+      if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(node) && /(^|\/)images\//.test(node)) total += 1;
       return;
     }
     if (Array.isArray(node)) node.forEach(walk);
