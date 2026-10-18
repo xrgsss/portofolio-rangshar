@@ -315,6 +315,14 @@ terbaca (di situlah letak masalah kalau store belum terhubung ke Development).
 
 ### Catatan Vercel
 
+- **Preset project harus Express, bukan Next.js.** Kalau preset-nya Next.js,
+  Vercel menjalankan `next build` dan deploy gagal dalam belasan detik dengan
+  pesan `No Next.js version detected`. Berkas `vercel.json` di repo ini memaksa
+  `"framework": "express"`, sehingga aman walaupun preset di dashboard keliru.
+  Jangan menambahkan skrip `vercel-build` ke `package.json`: skrip itu ikut
+  dijalankan Vercel dan akan gagal karena aplikasi ini tidak punya tahap build.
+- Preset Express menaruh `views/` ke dalam fungsi lewat `filePathMap`. Jadi
+  `views/` wajib ada; jangan memindahkannya keluar dari repo.
 - **Backup lebih penting di sini**: data hidup di Redis. Unduh berkala dari
   **Akun & Keamanan → Unduh backup (JSON)**, dan simpan salinannya.
 - Ganti password dari dashboard disimpan di Redis, jadi berlaku untuk semua
