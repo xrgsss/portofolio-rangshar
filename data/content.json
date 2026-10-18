@@ -10,7 +10,7 @@
       "I am a creator who works on various types of projects.",
       "From visual design and website development to digital experimentation, I focus on quality, functionality, and user experience."
     ],
-    "image": "images/hero/hero.png",
+    "image": "https://xiwyk1ialykigmfb.public.blob.vercel-storage.com/images/hero/hero.png",
     "imageAlt": "Portrait of Rangga Febrianto",
     "ctaLabel": "Let's talk",
     "ctaHref": "#contact",
@@ -40,7 +40,7 @@
     "body": [
       "I am an individual who is interested in various creative and technological fields. I enjoy exploring new ideas, learning new things, and turning concepts into real projects."
     ],
-    "image": "images/about%20me/ainulllm%20(279%20of%20929)%20(1).jpg",
+    "image": "https://xiwyk1ialykigmfb.public.blob.vercel-storage.com/images/about%20me/ainulllm%20%28279%20of%20929%29%20%281%29.jpg",
     "imageAlt": "About me",
     "buttons": [
       {
@@ -95,7 +95,7 @@
         "href": "portfolio-graphic.html",
         "galleryId": "graphic",
         "gallerySource": "portfolio-graphic.html",
-        "cover": "images/portofolio/design/kampus/3.jpg",
+        "cover": "https://xiwyk1ialykigmfb.public.blob.vercel-storage.com/images/portofolio/design/kampus/3.jpg",
         "coverAlt": "Graphic design boards"
       },
       {
@@ -103,7 +103,7 @@
         "href": "portfolio-photo.html",
         "galleryId": "photo",
         "gallerySource": "portfolio-photo.html",
-        "cover": "images/portofolio/fotografi/11.jpg",
+        "cover": "https://xiwyk1ialykigmfb.public.blob.vercel-storage.com/images/portofolio/fotografi/11.jpg",
         "coverAlt": "Photography scene in desert"
       },
       {
@@ -111,7 +111,7 @@
         "href": "portfolio-web.html",
         "galleryId": "web",
         "gallerySource": "portfolio-web.html",
-        "cover": "images/portofolio/web/Screenshot%202025-12-26%20180917.png",
+        "cover": "https://xiwyk1ialykigmfb.public.blob.vercel-storage.com/images/portofolio/web/Screenshot%202025-12-26%20180917.png",
         "coverAlt": "Web development workspace"
       },
       {
@@ -119,7 +119,7 @@
         "href": "portfolio-flutter.html",
         "galleryId": "flutter",
         "gallerySource": "portfolio-flutter.html",
-        "cover": "images/portofolio/aplikasi%20flutter/Screenshot%20%281240%29.png",
+        "cover": "https://xiwyk1ialykigmfb.public.blob.vercel-storage.com/images/portofolio/aplikasi%20flutter/Screenshot%20%281240%29.png",
         "coverAlt": "Flutter app preview"
       },
       {
@@ -127,7 +127,7 @@
         "href": "portfolio-3d.html",
         "galleryId": "3d",
         "gallerySource": "portfolio-3d.html",
-        "cover": "images/portofolio/3d/flat%20tracker.png",
+        "cover": "https://xiwyk1ialykigmfb.public.blob.vercel-storage.com/images/portofolio/3d/flat%20tracker.png",
         "coverAlt": "3D Design"
       }
     ]
@@ -159,57 +159,57 @@
     "items": [
       {
         "name": "Figma",
-        "logo": "images/logo/Figma.png",
+        "logo": "https://xiwyk1ialykigmfb.public.blob.vercel-storage.com/images/logo/Figma.png",
         "logoAlt": "Figma logo"
       },
       {
         "name": "Adobe Photoshop",
-        "logo": "images/logo/Adobe Photoshop.png",
+        "logo": "https://xiwyk1ialykigmfb.public.blob.vercel-storage.com/images/logo/Adobe%20Photoshop.png",
         "logoAlt": "Adobe Photoshop logo"
       },
       {
         "name": "Adobe Illustrator",
-        "logo": "images/logo/Adobe Illustrator.png",
+        "logo": "https://xiwyk1ialykigmfb.public.blob.vercel-storage.com/images/logo/Adobe%20Illustrator.png",
         "logoAlt": "Adobe Illustrator logo"
       },
       {
         "name": "Adobe Lightroom",
-        "logo": "images/logo/Adobe Lightroom.png",
+        "logo": "https://xiwyk1ialykigmfb.public.blob.vercel-storage.com/images/logo/Adobe%20Lightroom.png",
         "logoAlt": "Adobe Lightroom logo"
       },
       {
         "name": "Adobe Premiere Pro",
-        "logo": "images/logo/Adobe Premiere Pro.png",
+        "logo": "https://xiwyk1ialykigmfb.public.blob.vercel-storage.com/images/logo/Adobe%20Premiere%20Pro.png",
         "logoAlt": "Adobe Premiere Pro logo"
       },
       {
         "name": "Adobe After Effects",
-        "logo": "images/logo/Adobe After Effects.png",
+        "logo": "https://xiwyk1ialykigmfb.public.blob.vercel-storage.com/images/logo/Adobe%20After%20Effects.png",
         "logoAlt": "Adobe After Effects logo"
       },
       {
         "name": "Blender",
-        "logo": "images/logo/Blender.png",
+        "logo": "https://xiwyk1ialykigmfb.public.blob.vercel-storage.com/images/logo/Blender.png",
         "logoAlt": "Blender logo"
       },
       {
         "name": "CapCut",
-        "logo": "images/logo/Capcut.png",
+        "logo": "https://xiwyk1ialykigmfb.public.blob.vercel-storage.com/images/logo/Capcut.png",
         "logoAlt": "CapCut logo"
       },
       {
         "name": "Android Studio",
-        "logo": "images/logo/Android Studio.png",
+        "logo": "https://xiwyk1ialykigmfb.public.blob.vercel-storage.com/images/logo/Android%20Studio.png",
         "logoAlt": "Android Studio logo"
       },
       {
         "name": "Visual Studio Code",
-        "logo": "images/logo/Visual Studio Code.png",
+        "logo": "https://xiwyk1ialykigmfb.public.blob.vercel-storage.com/images/logo/Visual%20Studio%20Code.png",
         "logoAlt": "Visual Studio Code logo"
       },
       {
         "name": "Meta",
-        "logo": "images/logo/Meta.webp",
+        "logo": "https://xiwyk1ialykigmfb.public.blob.vercel-storage.com/images/logo/Meta.webp",
         "logoAlt": "Meta logo"
       }
     ]
