@@ -113,21 +113,34 @@ Catatan:
 ### Kalau login produksi menolak password yang benar
 
 Tandanya: di localhost bisa, di Vercel muncul `Username atau password salah.`
-(sesi dan cookie sehat — memang kredensialnya yang berbeda). Urutan pemeriksaan:
+(sesi dan cookie sehat — memang kredensialnya yang berbeda). Ada dua sumber
+password, dan **hash di Redis menang atas environment variable**:
 
-1. Samakan sumbernya. Pilih salah satu:
-   - ganti password dari dashboard **LIVE** (Vercel), atau
-   - isi environment variable `ADMIN_PASSWORD_HASH` di Vercel dengan nilai
-     `ADMIN_PASSWORD_HASH` dari `.env` lokal, lalu **redeploy**
-     (perubahan environment variable baru berlaku setelah deploy ulang).
+| Sumber | Yang berlaku kalau |
+| --- | --- |
+| `portfolio:admin:hash` di Redis | pernah ganti password dari dashboard LIVE |
+| `ADMIN_PASSWORD_HASH` di Vercel | Redis belum punya hash |
 
-   Menyalin hash dari `.env` lokal ke clipboard:
+1. Cara tercepat — samakan produksi dengan password localhost Anda. Perintah ini
+   menyalin hash dari `.env` lokal ke Redis, jadi passwordnya tidak perlu
+   ditulis di terminal:
+   ```bash
+   npm run reset:password -- --url "rediss://..." --from-local
+   ```
+
+2. Kalau masih ditolak, paksa instance-nya berganti: Vercel → **Deployments** →
+   deploy paling atas → **⋯** → **Redeploy**. Ini hanya perlu untuk deployment
+   lama yang masih menyimpan hash di memori. Sejak cache `hashResolved` di
+   `lib/auth.js` dihapus, hash dibaca ulang pada setiap percobaan login, jadi
+   perubahan di Redis langsung berlaku tanpa deploy ulang.
+
+3. Alternatifnya lewat environment variable: isi `ADMIN_PASSWORD_HASH` di Vercel
+   dengan nilai dari `.env` lokal, lalu **redeploy**. Menyalinnya ke clipboard:
    ```powershell
    node -e "require('./lib/env').loadEnvFiles(); process.stdout.write(process.env.ADMIN_PASSWORD_HASH)" | Set-Clipboard
    ```
 
-2. Kalau masih ditolak, berarti Redis masih menyimpan hash lama — dan hash di
-   Redis selalu menang atas environment variable. Periksa dan bereskan:
+4. Kalau perlu memeriksa / membereskan langsung di Redis:
    ```bash
    npm run reset:password -- --url "rediss://..." --dry
    npm run reset:password -- --url "rediss://..." --clear
@@ -442,7 +455,7 @@ node server.js
 | `npm run migrate:media [-- --dry]` | Pindahkan `images/` ke Vercel Blob dan perbarui data |
 | `npm run migrate:kv` | Kirim `data/*.json` ke Redis |
 | `npm run optimize:media [-- --dry]` | Kecilkan video & gambar, unggah ke Blob, perbarui data (butuh `ffmpeg`) |
-| `npm run reset:password -- --url "..." [--dry\|--clear\|--set "PasswordBaru"]` | Periksa / bereskan password admin di Redis produksi |
+| `npm run reset:password -- --url "..." [--dry\|--clear\|--set "PasswordBaru"\|--from-local]` | Periksa / bereskan password admin di Redis produksi |
 
 `npm run seed` tidak menimpa data yang ada kecuali dijalankan dengan
 `npm run seed -- --force` — gunakan hanya bila ingin mengembalikan isi website
