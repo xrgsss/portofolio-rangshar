@@ -7,6 +7,9 @@ node_modules/
 # Runtime session files (hanya dipakai versi lama)
 .sessions/
 
+# Statistik pengunjung versi lokal; di Vercel angkanya tersimpan di Redis.
+data/analytics.json
+
 # Media lokal. Setelah `npm run migrate:media`, semua berkas ini sudah berada
 # di Vercel Blob dan tidak perlu ikut ke Git lagi.
 images/

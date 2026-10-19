@@ -51,7 +51,7 @@ media di folder `images/`. Redis dan Vercel Blob opsional (lihat bagian 6).
 
 | Menu | Yang bisa diubah |
 | --- | --- |
-| Dashboard | Statistik isi website + pintasan |
+| Dashboard | Statistik isi website + grafik pengunjung (live) + pintasan |
 | Judul Situs | Judul di tab browser / hasil pencarian |
 | Bagian Hero | Kalimat pembuka, foto, tombol, menu, label sosial |
 | Tentang Saya | Kicker, judul, paragraf, foto, tombol |
@@ -69,6 +69,20 @@ tombol **Simpan perubahan** sendiri.
 
 Unggah gambar/video: gunakan tombol **Unggah** (berkas baru) atau **Pilih**
 (memakai gambar yang sudah ada di website).
+
+**Grafik pengunjung** ada di menu **Dashboard**. Isinya jumlah tampilan halaman
+publik (`/` dan `portfolio-*.html`) per jam untuk 24 jam terakhir, ditambah
+angka **Total kunjungan**, **Hari ini**, dan **Jam ini**. Grafiknya menyegarkan
+diri otomatis tiap 15 detik (tombol **Segarkan** untuk memaksa).
+
+Catatan:
+
+- Angka mulai terkumpul **sejak fitur ini dipasang** — tidak ada data sebelum itu.
+- Bot/crawler dan admin yang sedang login **tidak** dihitung, supaya angkanya
+  mencerminkan pengunjung sungguhan.
+- Yang disimpan hanya angka. **Tidak ada IP, cookie, atau data pribadi.**
+- Di Vercel angkanya tersimpan di Redis; saat lokal di `data/analytics.json`.
+- Bucket waktu memakai WIB (UTC+7) agar label sama di laptop maupun Vercel.
 
 ---
 
@@ -100,6 +114,8 @@ data/
   content.json         Isi halaman utama (hero, about, portfolio, dll.)
   galleries.json       Isi halaman galeri portfolio
                        (di Vercel kedua file ini hanya jadi nilai awal)
+  analytics.json       Hitungan kunjungan versi lokal (dibuat otomatis;
+                       di Vercel angkanya tersimpan di Redis)
 
 views/                 Template EJS (HTML yang dirender server)
   index.ejs            Halaman utama
@@ -118,6 +134,7 @@ lib/
   schema.js            Validasi + pembersihan data dari browser
   redis.js             Sambungan Redis (data + rate limit)
   store.js             Baca/tulis data (Redis atau data/*.json)
+  analytics.js         Hitung kunjungan halaman publik (grafik dashboard)
   media.js             Unggah/hapus media di Vercel Blob
 
 scripts/

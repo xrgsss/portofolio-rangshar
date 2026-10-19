@@ -29,6 +29,7 @@ const store = require('./lib/store').store;
 const schema = require('./lib/schema');
 const media = require('./lib/media');
 const redis = require('./lib/redis');
+const analytics = require('./lib/analytics');
 
 const ROOT = __dirname;
 const PUBLIC_DIR = path.join(ROOT, 'public');
@@ -68,6 +69,32 @@ app.use((req, res, next) => {
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('X-Robots-Tag', req.path.startsWith('/admin') ? 'noindex, nofollow' : 'index, follow');
+  next();
+});
+
+/* ------------------------------------------------ pencatatan pengunjung == */
+
+/** Hanya halaman publik yang punya isi: halaman utama & halaman galeri. */
+const isTrackedPage = (pathname) => pathname === '/' || /^\/portfolio-[a-z0-9_-]+\.html$/i.test(pathname);
+
+/** Bot/crawler & perkakas pemantau tidak dihitung supaya angkanya wajar. */
+const BOT_USER_AGENT =
+  /bot|crawl|spider|slurp|bingpreview|facebookexternalhit|embedly|quora|pinterest|whatsapp|telegram|skypeuripreview|preview|lighthouse|headlesschrome|pingdom|uptimerobot|semrush|ahrefs|screaming|python-requests|python-urllib|curl\/|wget|axios\/|node-fetch|go-http-client|java\/|okhttp|postmanruntime/i;
+
+/**
+ * Catat satu kunjungan untuk grafik "Pengunjung Website" di dashboard.
+ * Tidak menunggu (fire-and-forget) agar kecepatan halaman tidak terpengaruh,
+ * dan admin yang sedang login tidak ikut terhitung (kunjungan diri sendiri).
+ */
+app.use((req, res, next) => {
+  if (
+    req.method === 'GET' &&
+    isTrackedPage(req.path) &&
+    !auth.isAuthenticated(req) &&
+    !BOT_USER_AGENT.test(req.get('user-agent') || '')
+  ) {
+    analytics.recordView().catch(() => {});
+  }
   next();
 });
 
@@ -282,6 +309,19 @@ api.get(
         rateLimit: redis.isConfigured() ? `redis (${redis.transportName()})` : 'memori',
       },
     });
+  })
+);
+
+/**
+ * Statistik pengunjung untuk grafik di dashboard.
+ * `hours` (1–168) bisa dipakai kalau nanti mau menampilkan rentang lain.
+ */
+api.get(
+  '/analytics',
+  wrap(async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    const report = await analytics.getReport({ hours: Number(req.query.hours) || 24 });
+    res.json({ ok: true, ...report });
   })
 );
 

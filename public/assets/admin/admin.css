@@ -566,6 +566,79 @@ button:disabled {
   gap: 10px;
 }
 
+/* ------------------------------------------------------- pengunjung (chart) */
+
+.visitor-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+}
+
+.visitor-card {
+  background: linear-gradient(180deg, rgba(109, 75, 255, 0.09), rgba(109, 75, 255, 0.02));
+  border: 1px solid rgba(109, 75, 255, 0.2);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+
+.visitor-card .value {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--primary);
+  line-height: 1.1;
+}
+
+.visitor-card .label {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.chart-wrap {
+  margin-top: 16px;
+  background: #fbfbfe;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px 14px 6px;
+}
+
+.chart-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.chart-grid {
+  stroke: var(--line);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.chart-area {
+  fill: rgba(109, 75, 255, 0.16);
+}
+
+.chart-line {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.chart-label {
+  fill: var(--muted);
+  font-size: 11px;
+  font-family: 'Manrope', sans-serif;
+}
+
+.chart-label-max {
+  fill: var(--primary);
+  font-weight: 700;
+}
+
 /* -------------------------------------------------------------- repeater */
 
 .repeater {

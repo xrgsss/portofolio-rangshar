@@ -3,6 +3,7 @@
    ---------------------------------------------------------------------------
    Semua data diambil / disimpan lewat API di server:
      GET  /api/session              -> info sesi + statistik
+     GET  /api/analytics            -> statistik pengunjung (grafik dashboard)
      GET  /api/content              -> seluruh konten halaman utama
      PUT  /api/content/:section     -> simpan satu bagian
      GET  /api/galleries            -> seluruh halaman galeri
@@ -37,6 +38,7 @@
     draft: null,
     dirty: false,
     stats: null,
+    visits: null,
     account: null,
   };
 
@@ -775,6 +777,132 @@
 
   /* ------------------------------------------------------------- overview */
 
+  /* ---------------------------------------------------------- pengunjung --- */
+
+  const formatNumber = (value) => new Intl.NumberFormat('id-ID').format(Number(value) || 0);
+
+  /**
+   * Grafik garis sederhana untuk 24 jam terakhir, digambar langsung sebagai
+   * SVG supaya tidak perlu memuat library chart apa pun.
+   * `points` = [{ label: '14:00', count: 3 }, ...]
+   */
+  const chartSvg = (points) => {
+    const width = 720;
+    const height = 190;
+    const top = 14;
+    const bottom = 150;
+    const max = Math.max(1, ...points.map((point) => point.count));
+    const stepX = points.length > 1 ? width / (points.length - 1) : width;
+    const xAt = (index) => (points.length > 1 ? index * stepX : width / 2);
+    const yAt = (count) => bottom - (count / max) * (bottom - top);
+
+    const coords = points.map((point, index) => [xAt(index), yAt(point.count)]);
+    const line = coords.map(([cx, cy]) => `${cx.toFixed(1)},${cy.toFixed(1)}`).join(' ');
+    const area = `${xAt(0).toFixed(1)},${bottom} ${line} ${xAt(points.length - 1).toFixed(1)},${bottom}`;
+
+    const grid = [0, 0.5, 1]
+      .map((ratio) => {
+        const gy = (bottom - ratio * (bottom - top)).toFixed(1);
+        return `<line x1="0" y1="${gy}" x2="${width}" y2="${gy}" class="chart-grid" />`;
+      })
+      .join('');
+
+    const ticks = points
+      .map((point, index) => ({ point, index }))
+      .filter(({ index }) => index === 0 || index === points.length - 1 || index % 6 === 0)
+      .map(({ point, index }) => {
+        const anchor = index === 0 ? 'start' : index === points.length - 1 ? 'end' : 'middle';
+        return `<text x="${xAt(index).toFixed(1)}" y="176" text-anchor="${anchor}" class="chart-label">${escapeHtml(
+          point.label
+        )}</text>`;
+      })
+      .join('');
+
+    return `
+      <svg class="chart-svg" viewBox="0 0 ${width} ${height}" role="img"
+        aria-label="Grafik kunjungan 24 jam terakhir">
+        ${grid}
+        <polygon class="chart-area" points="${area}" />
+        <polyline class="chart-line" points="${line}" />
+        <text x="2" y="${top - 2}" class="chart-label chart-label-max">${formatNumber(max)}</text>
+        ${ticks}
+      </svg>`;
+  };
+
+  const renderVisitorPanel = () => {
+    const visits = state.visits;
+    const summary = (visits && visits.summary) || {};
+    const hours = (visits && visits.hours) || [];
+
+    const cards = [
+      { label: 'Total kunjungan', value: summary.total },
+      { label: 'Hari ini', value: summary.today },
+      { label: 'Jam ini', value: summary.thisHour },
+    ];
+
+    const foot = visits
+      ? `Terakhir diperbarui ${escapeHtml(new Date(visits.updatedAt).toLocaleTimeString('id-ID'))} • ${
+          hours.some((hour) => hour.count > 0)
+            ? 'ada kunjungan tercatat'
+            : 'belum ada kunjungan pada rentang ini'
+        } • penyimpanan ${escapeHtml(visits.storage)} • otomatis tiap 15 detik`
+      : 'Memuat statistik pengunjung…';
+
+    return `
+      <section class="panel mt-16" id="visitor-panel">
+        <div class="panel-head">
+          <div>
+            <h2>Pengunjung Website</h2>
+            <p>Tampilan halaman publik per jam, 24 jam terakhir (${escapeHtml(
+              (visits && visits.timezone) || 'UTC+7 (WIB)'
+            )}).</p>
+          </div>
+          <button type="button" class="btn-ghost btn-sm" id="visits-refresh">Segarkan</button>
+        </div>
+        <div class="visitor-cards">
+          ${cards
+            .map(
+              (card) => `
+            <div class="visitor-card">
+              <div class="value">${card.value === undefined ? '—' : formatNumber(card.value)}</div>
+              <div class="label">${escapeHtml(card.label)}</div>
+            </div>`
+            )
+            .join('')}
+        </div>
+        <div class="chart-wrap">
+          ${hours.length ? chartSvg(hours) : '<div class="empty-card">Belum ada data untuk digambar.</div>'}
+        </div>
+        <p class="small muted" style="margin:12px 0 0">${foot}</p>
+      </section>`;
+  };
+
+  let visitsTimer = null;
+
+  const stopVisitsTimer = () => {
+    if (visitsTimer) {
+      clearInterval(visitsTimer);
+      visitsTimer = null;
+    }
+  };
+
+  /** Ambil data terbaru lalu ganti HANYA panel pengunjung (tanpa render ulang total). */
+  const refreshVisits = async () => {
+    try {
+      const data = await api.get('/api/analytics');
+      state.visits = data;
+      const panel = document.getElementById('visitor-panel');
+      if (panel && state.tab === 'overview') panel.outerHTML = renderVisitorPanel();
+    } catch {
+      // Gangguan sesaat jangan sampai mengganggu seluruh dashboard.
+    }
+  };
+
+  const startVisitsTimer = () => {
+    stopVisitsTimer();
+    visitsTimer = setInterval(refreshVisits, 15000);
+  };
+
   const renderOverview = () => {
     const stats = state.stats || {};
     const cards = [
@@ -797,6 +925,7 @@
           )
           .join('')}
       </div>
+      ${renderVisitorPanel()}
       <section class="panel mt-16">
         <div class="panel-head">
           <div>
@@ -908,6 +1037,14 @@
 
     markClean();
     editor.scrollTop = 0;
+
+    // Grafik pengunjung hanya hidup selama tab Dashboard terbuka.
+    if (state.tab === 'overview') {
+      if (!state.visits) refreshVisits();
+      startVisitsTimer();
+    } else {
+      stopVisitsTimer();
+    }
   };
 
   /* ============================================================ penyimpanan */
@@ -1180,6 +1317,13 @@
   editor.addEventListener('click', async (event) => {
     const target = event.target.closest('button, .media-thumb');
     if (!target) return;
+
+    if (target.id === 'visits-refresh') {
+      target.disabled = true;
+      await refreshVisits();
+      target.disabled = false;
+      return;
+    }
 
     const { add, remove, moveUp, moveDown, upload, pick, deleteMedia, gallery, goto } = target.dataset;
 
