@@ -194,7 +194,8 @@ scripts/
   hash-password.mjs    Buat hash bcrypt manual
   migrate-media.mjs    Pindahkan images/ -> Vercel Blob + perbarui data
   migrate-kv.mjs       Kirim data/*.json -> Redis
-  optimize-media.mjs   Kecilkan video & gambar -> Blob + perbarui data
+  optimize-media.mjs   Kecilkan video & gambar -> folder lokal atau Blob
+  repoint-media.mjs    Arahkan alamat media ke host statis baru
   reset-password.mjs   Periksa/ganti password admin di Redis produksi
 
 images/                Gambar & video lokal (tidak ikut ke Vercel)
@@ -420,6 +421,42 @@ terbaca (di situlah letak masalah kalau store belum terhubung ke Development).
 - Saat menambah media baru, cukup unggah dari dashboard — berkas otomatis masuk
   ke Blob.
 
+### 6a. Menaruh media di host lain (kalau Blob bermasalah)
+
+Kalau store diblokir atau kuotanya kurang, media bisa ditaruh di host statis
+mana pun (GitHub Pages, Cloudflare Pages, VPS, dsb.). Dua langkah:
+
+```bash
+# 1. Siapkan folder hasil pengecilan. data/*.json belum diubah.
+npm run optimize:media -- --out media-siap-unggah
+
+# 2. Unggah isi folder itu ke host pilihan, lalu arahkan data ke sana.
+npm run repoint:media -- --host https://contoh.example/media --dry
+npm run repoint:media -- --host https://contoh.example/media
+```
+
+- Folder hasil mengikuti susunan pathname di store
+  (`media-siap-unggah/images/optimized/...`), dan berkas yang tidak perlu
+  dikompres ikut disalin apa adanya — jadi satu folder itu sudah lengkap untuk
+  menggantikan seluruh media website.
+- Catatan pemetaan alamat lama → berkas baru ditulis ke
+  `data/media-manifest.json`, dan itulah yang dibaca `repoint:media`.
+  Karena itu langkah 2 harus dijalankan *setelah* langkah 1.
+- `repoint:media` juga melaporkan **alamat yang belum punya berkas lokal**
+  (mis. unggahan yang hanya ada di store lama). Alamat semacam itu dibiarkan
+  apa adanya supaya tidak menambah gambar rusak.
+- Setelah `repoint:media`, periksa tampilannya lalu `git commit` + `push`.
+  Situs live memakai `data/*.json` dari repo, jadi alamat baru itu langsung
+  berlaku di produksi. `REVERT`: `git checkout -- data/`.
+- Host statis itu harus **publik** (tanpa login) karena browser pengunjung
+  mengambil berkasnya langsung.
+- Yang diarahkan hanya **alamat berkas di `data/*.json`**. Dashboard tetap
+  mengunggah media baru ke Vercel Blob seperti biasa, jadi selama store masih
+  diblokir, unggahan baru dari dashboard akan gagal — pakai alamat Blob lagi
+  adalah hal terpisah, bisa dilakukan kapan saja setelah kuotanya pulih.
+- Kalau `ffmpeg` belum terpasang, skrip bisa memakai berkas portabel:
+  `$env:FFMPEG_PATH = "C:\path\ke\ffmpeg.exe"`.
+
 ---
 
 ## 7. Deploy ke hosting Node biasa
@@ -454,7 +491,8 @@ node server.js
 | `npm run seed` | Ekstrak ulang isi dari HTML lama ke `data/*.json` |
 | `npm run migrate:media [-- --dry]` | Pindahkan `images/` ke Vercel Blob dan perbarui data |
 | `npm run migrate:kv` | Kirim `data/*.json` ke Redis |
-| `npm run optimize:media [-- --dry]` | Kecilkan video & gambar, unggah ke Blob, perbarui data (butuh `ffmpeg`) |
+| `npm run optimize:media [-- --dry] [-- --out <folder>]` | Kecilkan video & gambar; tanpa `--out` unggah ke Blob + perbarui data, dengan `--out` simpan ke folder lokal (butuh `ffmpeg`) |
+| `npm run repoint:media -- --host <alamat> [--dry]` | Arahkan alamat media di `data/*.json` ke host statis baru (membaca `data/media-manifest.json`) |
 | `npm run reset:password -- --url "..." [--dry\|--clear\|--set "PasswordBaru"\|--from-local]` | Periksa / bereskan password admin di Redis produksi |
 
 `npm run seed` tidak menimpa data yang ada kecuali dijalankan dengan

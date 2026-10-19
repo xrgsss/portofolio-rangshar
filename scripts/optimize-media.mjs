@@ -11,22 +11,32 @@
  *
  * Pemakaian:
  *   npm run optimize:media -- --dry            laporan saja (tanpa ffmpeg)
- *   npm run optimize:media                     proses semua berkas
+ *   npm run optimize:media                     proses semua berkas, lalu unggah ke Blob
+ *   npm run optimize:media -- --out <folder>   simpan hasil ke folder lokal
+ *                                              (tanpa unggah & tanpa ubah data)
  *   npm run optimize:media -- --limit 1        uji coba 1 berkas dulu
  *   npm run optimize:media -- --only 3d        pilih berkas yang mengandung "3d"
  *   npm run optimize:media -- --video-only     hanya video
  *   npm run optimize:media -- --image-only     hanya gambar
  *   npm run optimize:media -- --crf 30         video lebih kecil (default 28)
- *   npm run optimize:media -- --keep-original  jangan sentuh berkas di bawah ambang
+ *   npm run optimize:media -- --preset fast    video lebih cepat diproses (default slow)
  *
- * Hasilnya:
- *   - Berkas baru diunggah ke  images/optimized/<path lama>  (berkas lama TIDAK dihapus)
- *   - data/content.json & data/galleries.json diperbarui ke alamat baru
- *   - Dua berkas cadangan ditulis ke data/:
- *       optimize-<waktu>-before.json  (isi sebelum diubah — untuk jaga-jaga)
- *       optimize-<waktu>-after.json   (isi sesudah — impor ini di dashboard live)
+ * Dua tujuan:
+ *   1. Vercel Blob (bawaan)
+ *      - Berkas hasil diunggah ke  images/optimized/<path lama>  (berkas lama TIDAK dihapus)
+ *      - data/content.json & data/galleries.json diperbarui ke alamat baru
+ *      - Cadangan: data/optimize-<waktu>-before.json & -after.json
+ *   2. Folder lokal (--out)
+ *      - Hasil ditulis ke folder itu, strukturnya mengikuti pathname di store,
+ *        dan berkas yang tidak perlu dikompres ikut disalin apa adanya supaya
+ *        satu folder itu lengkap untuk menggantikan seluruh media website.
+ *      - data/*.json TIDAK diubah. Catatan pemetaannya ditulis ke
+ *        data/media-manifest.json, yang nanti dipakai perintah:
+ *          npm run repoint:media -- --host https://host-baru.example
  *
- * Prasyarat: ffmpeg ada di PATH. Kalau belum:
+ * Prasyarat: ffmpeg. Bisa dipakai dari berkas portabel, tanpa dipasang ke sistem:
+ *   $env:FFMPEG_PATH = "C:\path\ke\ffmpeg.exe"
+ * Kalau belum ada:
  *   winget install Gyan.FFmpeg          (Windows)
  *   brew install ffmpeg                 (macOS)
  *   sudo apt install ffmpeg             (Linux)
@@ -71,24 +81,38 @@ const DRY = hasFlag('dry');
 const LIMIT = Number(valueOf('limit', '0')) || 0;
 const ONLY = valueOf('only', '');
 const CRF = valueOf('crf', '28');
+const PRESET = valueOf('preset', 'slow');
 const IMAGE_QUALITY = valueOf('image-quality', '80');
 const MAX_VIDEO_WIDTH = valueOf('max-video-width', '1280');
 const MAX_IMAGE_WIDTH = valueOf('max-image-width', '1920');
 const VIDEO_ONLY = hasFlag('video-only');
 const IMAGE_ONLY = hasFlag('image-only');
 
+/** Tujuan hasil: folder lokal (--out) atau Vercel Blob (bawaan). */
+const OUT_DIR = valueOf('out', '');
+const OUT_ROOT = OUT_DIR ? path.resolve(ROOT, OUT_DIR) : '';
+
 const mb = (bytes) => `${(bytes / 1024 / 1024).toFixed(2)} MB`;
 
 /* ------------------------------------------------------------------ ffmpeg */
 
 const ffmpegPath = (() => {
+  // ffmpeg portabel: pakai jalur lengkapnya lewat FFMPEG_PATH bila ada.
+  const custom = (process.env.FFMPEG_PATH || '').trim();
+  if (custom && fs.existsSync(custom)) {
+    const probe = spawnSync(custom, ['-version'], { encoding: 'utf8' });
+    if (probe.status === 0) return custom;
+  }
+
   const probe = spawnSync('ffmpeg', ['-version'], { encoding: 'utf8' });
   return probe.status === 0 ? 'ffmpeg' : '';
 })();
 
 if (!ffmpegPath && !DRY) {
-  console.error('✖  ffmpeg tidak ditemukan di PATH.');
-  console.error('   Pasang dulu, lalu jalankan ulang:');
+  console.error('✖  ffmpeg tidak ditemukan.');
+  console.error('   Pasang dulu, atau tunjuk berkas ffmpeg portabelnya:');
+  console.error('     $env:FFMPEG_PATH = "C:\\path\\ke\\ffmpeg.exe"');
+  console.error('   Cara memasang:');
   console.error('     Windows : winget install Gyan.FFmpeg');
   console.error('     macOS   : brew install ffmpeg');
   console.error('     Linux   : sudo apt install ffmpeg');
@@ -127,6 +151,7 @@ const collectMedia = (value, found = new Set()) => {
 /**
  * Ubah alamat media menjadi berkas lokal, kalau ada.
  *   https://<store>.public.blob.vercel-storage.com/images/a/b.mp4 -> images/a/b.mp4
+ *   https://<store>.public.blob.vercel-storage.com/uploads/c.png  -> images/uploads/c.png
  *   images/uploads/c.png                                          -> images/uploads/c.png
  */
 const localPathFor = (reference) => {
@@ -140,10 +165,19 @@ const localPathFor = (reference) => {
     relative = decodeURI(reference).replace(/^\/+/, '');
   }
 
-  if (!relative.startsWith('images/')) return '';
-  const full = path.join(ROOT, relative);
-  return fs.existsSync(full) && fs.statSync(full).isFile() ? full : '';
+  const candidates = [];
+  if (relative.startsWith('images/')) candidates.push(path.join(ROOT, relative));
+  if (relative.startsWith('uploads/')) candidates.push(path.join(ROOT, 'images', relative));
+
+  for (const full of candidates) {
+    if (fs.existsSync(full) && fs.statSync(full).isFile()) return full;
+  }
+
+  return '';
 };
+
+/** Pathname di dalam store/host: images/uploads/x.png -> uploads/x.png */
+const storePathnameFor = (relative) => relative.replace(/^images\/uploads\//, 'uploads/');
 
 /** images/portofolio/3d/0213.mp4 -> images/optimized/portofolio/3d/0213.mp4 */
 const optimizedPathname = (relativePath, newExt) => {
@@ -158,7 +192,7 @@ const runFfmpeg = (input, output, kind) => {
     '-y', '-i', input,
     '-vf', `scale='min(${MAX_VIDEO_WIDTH},iw)':-2`,
     '-c:v', 'libx264',
-    '-preset', 'slow',
+    '-preset', PRESET,
     '-crf', CRF,
     '-pix_fmt', 'yuv420p',
     '-movflags', '+faststart',
@@ -186,35 +220,48 @@ const runFfmpeg = (input, output, kind) => {
 
 /* ------------------------------------------------------------------- jalan */
 
-const plan = [];
+/** Semua media yang punya salinan lokal — termasuk yang tidak perlu dikompres. */
+const semua = [];
 
 for (const reference of collectMedia([content, galleries])) {
   const local = localPathFor(reference);
   if (!local) continue;
 
   const ext = path.extname(local).toLowerCase();
-  const isVideo = VIDEO_EXT.has(ext);
-  const isImage = IMAGE_EXT.has(ext);
-  if (!isVideo && !isImage) continue;
-  if (SKIP_EXT.has(ext)) continue;
-  if (VIDEO_ONLY && !isVideo) continue;
-  if (IMAGE_ONLY && !isImage) continue;
-
-  const size = fs.statSync(local).size;
-  const threshold = isVideo ? MIN_VIDEO_BYTES : MIN_IMAGE_BYTES;
-  if (size < threshold) continue;
-
+  const kind = VIDEO_EXT.has(ext) ? 'video' : IMAGE_EXT.has(ext) ? 'image' : 'lain';
   const relative = path.relative(ROOT, local).split(path.sep).join('/');
-  if (ONLY && !relative.toLowerCase().includes(ONLY.toLowerCase())) continue;
 
-  plan.push({ reference, local, relative, size, kind: isVideo ? 'video' : 'image', ext });
+  semua.push({ reference, local, relative, size: fs.statSync(local).size, kind, ext });
 }
+
+/** Yang dipilih untuk diproses (--only / --video-only / --image-only). */
+const dipilih = semua.filter((item) => {
+  if (VIDEO_ONLY && item.kind !== 'video') return false;
+  if (IMAGE_ONLY && item.kind !== 'image') return false;
+  if (ONLY && !item.relative.toLowerCase().includes(ONLY.toLowerCase())) return false;
+  return true;
+});
+
+/** Yang benar-benar dikompres: video/gambar yang cukup besar. */
+const plan = dipilih.filter((item) => {
+  if (item.kind === 'lain' || SKIP_EXT.has(item.ext)) return false;
+  const threshold = item.kind === 'video' ? MIN_VIDEO_BYTES : MIN_IMAGE_BYTES;
+  return item.size >= threshold;
+});
 
 plan.sort((a, b) => b.size - a.size);
 
-if (plan.length === 0) {
+/** Mode folder lokal: berkas yang tidak dikompres ikut disalin supaya lengkap. */
+const salin = OUT_ROOT && !LIMIT ? dipilih.filter((item) => !plan.includes(item)) : [];
+
+if (plan.length === 0 && salin.length === 0) {
   console.log('ℹ  Tidak ada berkas media yang perlu dikecilkan (atau berkas lokalnya tidak ditemukan).');
   process.exit(0);
+}
+
+if (OUT_ROOT) {
+  console.log(`\nℹ  Tujuan: folder ${path.relative(ROOT, OUT_ROOT).split(path.sep).join('/')} (data/*.json tidak diubah)`);
+  if (salin.length > 0) console.log(`   ${salin.length} berkas kecil/tidak sepadan dikompres akan disalin apa adanya.`);
 }
 
 console.log(`\n${'─'.repeat(78)}`);
@@ -248,12 +295,36 @@ const afterFile = path.join(ROOT, 'data', `optimize-${stamp}-after.json`);
 const snapshot = (label) =>
   JSON.stringify({ exportedAt: new Date().toISOString(), version: 1, label, content, galleries }, null, 2);
 
-fs.writeFileSync(beforeFile, snapshot('sebelum optimasi'), 'utf8');
-console.log(`\n✔  Cadangan sebelum diubah: data/${path.basename(beforeFile)}`);
+// Mode folder lokal tidak menyentuh data/*.json, jadi tidak perlu cadangan.
+if (!OUT_ROOT) {
+  fs.writeFileSync(beforeFile, snapshot('sebelum optimasi'), 'utf8');
+  console.log(`\n✔  Cadangan sebelum diubah: data/${path.basename(beforeFile)}`);
+}
 
 /* ------------------------------------------------------------ proses satu */
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'opt-media-'));
+
+/** Catatan pemetaan "alamat lama → berkas di folder hasil" (dipakai repoint:media). */
+const entries = [];
+let copied = 0;
+
+/** Tulis satu berkas ke folder hasil, mengikuti pathname di store. */
+const writeToOut = (source, pathname) => {
+  const target = path.join(OUT_ROOT, pathname);
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.copyFileSync(source, target);
+  return target;
+};
+
+/** Salin berkas apa adanya (berkas kecil / tidak sepadan dikompres). */
+const copyVerbatim = (item) => {
+  const pathname = storePathnameFor(item.relative);
+  writeToOut(item.local, pathname);
+  entries.push({ from: item.reference, pathname, action: 'copy', before: item.size, after: item.size });
+  copied += 1;
+  console.log(`  ${mb(item.size).padStart(10)}  ${pathname}  (disalin apa adanya)`);
+};
 
 /** Ganti semua kemunculan alamat lama dengan alamat baru di seluruh JSON. */
 const replaceEverywhere = (oldValue, newValue) => {
@@ -290,6 +361,8 @@ for (const item of plan) {
   } catch (error) {
     failed += 1;
     console.log(`  ✖  Gagal dikompres: ${error.message}`);
+    // Di mode folder lokal, berkasnya tetap harus ada di host baru.
+    if (OUT_ROOT) copyVerbatim(item);
     continue;
   }
 
@@ -297,10 +370,26 @@ for (const item of plan) {
   if (newSize >= item.size * 0.9) {
     console.log(`  ↷  Dilewati: hasilnya tidak lebih kecil (${mb(newSize)} vs ${mb(item.size)}).`);
     fs.unlinkSync(output);
+    // Di mode folder lokal berkasnya tetap harus ada di host baru.
+    if (OUT_ROOT) copyVerbatim(item);
     continue;
   }
 
   const pathname = optimizedPathname(item.relative, newExt);
+
+  // Mode folder lokal: cukup tulis ke folder — tanpa unggah, tanpa ubah data.
+  if (OUT_ROOT) {
+    writeToOut(output, pathname);
+    fs.unlinkSync(output);
+    entries.push({ from: item.reference, pathname, action: 'compress', before: item.size, after: newSize });
+    results.push({ relative: item.relative, before: item.size, after: newSize, pathname });
+    processed += 1;
+
+    console.log(`  ✔  ${mb(item.size)} → ${mb(newSize)}  (hemat ${(100 - (newSize / item.size) * 100).toFixed(0)}%)`);
+    console.log(`     ${pathname}`);
+    continue;
+  }
+
   const contentType = item.kind === 'video' ? 'video/mp4' : 'image/webp';
 
   try {
@@ -327,9 +416,31 @@ for (const item of plan) {
   }
 }
 
+/* ---------------------------------------------------------- salin sisanya */
+
+if (salin.length > 0) {
+  console.log(`\n${'─'.repeat(78)}`);
+  console.log(`  Disalin apa adanya (${salin.length} berkas kecil / tidak sepadan dikompres):`);
+  for (const item of salin) copyVerbatim(item);
+}
+
+/* ---------------------------------------------------------------- manifest */
+
+if (OUT_ROOT) {
+  const manifestFile = path.join(ROOT, 'data', 'media-manifest.json');
+  const manifest = {
+    generatedAt: new Date().toISOString(),
+    outDir: path.relative(ROOT, OUT_ROOT).split(path.sep).join('/'),
+    total: entries.length,
+    entries,
+  };
+  fs.writeFileSync(manifestFile, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
+  console.log(`\n✔  Catatan pemetaan: data/${path.basename(manifestFile)} (${entries.length} berkas)`);
+}
+
 /* --------------------------------------------------------------- simpan -- */
 
-if (results.length > 0) {
+if (results.length > 0 && !OUT_ROOT) {
   fs.writeFileSync(CONTENT_FILE, `${JSON.stringify(content, null, 2)}\n`, 'utf8');
   fs.writeFileSync(GALLERIES_FILE, `${JSON.stringify(galleries, null, 2)}\n`, 'utf8');
   fs.writeFileSync(afterFile, snapshot('sesudah optimasi'), 'utf8');
@@ -339,6 +450,28 @@ const beforeTotal = results.reduce((sum, r) => sum + r.before, 0);
 const afterTotal = results.reduce((sum, r) => sum + r.after, 0);
 
 console.log(`\n${'─'.repeat(78)}`);
+
+if (OUT_ROOT) {
+  const totalAsli = entries.reduce((sum, item) => sum + item.before, 0);
+  const totalBaru = entries.reduce((sum, item) => sum + item.after, 0);
+  const folder = path.relative(ROOT, OUT_ROOT).split(path.sep).join('/');
+
+  console.log(`  SELESAI — ${entries.length} berkas siap di folder ${folder}`);
+  console.log(`  ${results.length} dikompres, ${copied} disalin apa adanya, ${failed} gagal dikompres`);
+  console.log(`  Ukuran total : ${mb(totalAsli)} → ${mb(totalBaru)} (${(100 - (totalBaru / totalAsli) * 100).toFixed(0)}% lebih kecil)`);
+  console.log('  data/*.json  : belum diubah — alamat media masih menunjuk host lama.');
+  console.log('\n  Berikutnya:');
+  console.log(`   1. Unggah isi folder ${folder} ke host pilihan Anda, misalnya:`);
+  console.log('        GitHub Pages     : dorong isinya ke repo publik, lalu aktifkan Pages');
+  console.log(`        Cloudflare Pages : npx wrangler pages deploy ${folder}`);
+  console.log('   2. Setelah host-nya hidup, arahkan data ke sana:');
+  console.log('        npm run repoint:media -- --host https://host-anda.example --dry');
+  console.log('        npm run repoint:media -- --host https://host-anda.example');
+  console.log('   3. commit + push supaya situs live memakai alamat baru.');
+  console.log(`${'─'.repeat(78)}\n`);
+  process.exit(failed > 0 ? 1 : 0);
+}
+
 console.log(`  SELESAI — ${results.length} berhasil, ${failed} gagal/skip`);
 if (results.length > 0) {
   console.log(`  Ukuran berkas media : ${mb(beforeTotal)} → ${mb(afterTotal)}`);

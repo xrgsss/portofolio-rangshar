@@ -10,8 +10,17 @@ node_modules/
 # Statistik pengunjung versi lokal; di Vercel angkanya tersimpan di Redis.
 data/analytics.json
 
-# Cadangan hasil `npm run optimize:media` (data runtime, bukan isi website).
+# Cadangan hasil `npm run optimize:media` / `npm run repoint:media`
+# (data runtime, bukan isi website).
 data/optimize-*.json
+data/repoint-*.json
+
+# Catatan pemetaan hasil `npm run optimize:media -- --out <folder>`.
+data/media-manifest.json
+
+# Folder hasil pengecilan media yang siap diunggah ke host lain.
+# Isinya besar (puluhan MB), jadi tidak ikut ke Git.
+media-siap-unggah/
 
 # Media lokal. Setelah `npm run migrate:media`, semua berkas ini sudah berada
 # di Vercel Blob dan tidak perlu ikut ke Git lagi.

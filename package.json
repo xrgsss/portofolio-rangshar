@@ -13,6 +13,7 @@
     "migrate:media": "node scripts/migrate-media.mjs",
     "migrate:kv": "node scripts/migrate-kv.mjs",
     "optimize:media": "node scripts/optimize-media.mjs",
+    "repoint:media": "node scripts/repoint-media.mjs",
     "reset:password": "node scripts/reset-password.mjs"
   },
   "dependencies": {
