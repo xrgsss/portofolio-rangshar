@@ -55,14 +55,20 @@
         <div class="gallery-grid">
           <% section.items.forEach((item, index) => { %>
           <% const isLink = Boolean(item.href); %>
+          <% const isVideo = item.type === 'video'; %>
           <% const tag = isLink ? 'a' : 'div'; %>
-          <<%= tag %> class="gallery-item reveal" style="--reveal-delay: <%= 60 + index * 60 %>ms"
+          <<%= tag %> class="gallery-item reveal<%= isVideo ? ' is-video' : '' %>"
+            style="--reveal-delay: <%= 60 + index * 60 %>ms"
             <% if (isLink) { %>href="<%= item.href %>" target="_blank" rel="noopener"<% } %>
-            <% if (isLink && item.alt) { %>aria-label="<%= item.alt %>"<% } %>>
-            <% if (item.type === 'video') { %>
-            <video src="<%= item.src %>" loop muted playsinline alt="<%= item.alt %>"></video>
+            <% if (isLink && item.alt) { %>aria-label="<%= item.alt %>"<% } %>
+            <% if (isVideo && item.caption) { %>aria-label="Putar video: <%= item.caption %>"<% } %>>
+            <% if (isVideo) { %>
+            <%# Video sengaja TIDAK punya src: browsernya baru mengunduh berkas
+                setelah pengunjung menekan tombol putar. Ini yang menghemat kuota
+                transfer Blob (video bisa puluhan MB per berkas). %>
+            <video data-src="<%= item.src %>" preload="none" muted loop playsinline></video>
             <% } else { %>
-            <img src="<%= item.src %>" alt="<%= item.alt %>">
+            <img src="<%= item.src %>" alt="<%= item.alt %>" loading="lazy" decoding="async">
             <% } %>
             <% if (item.caption) { %>
             <span><%= item.caption %></span>
@@ -97,18 +103,6 @@
       });
 
       const gridVideos = document.querySelectorAll('.gallery-grid video');
-      const videoObserver = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.play().catch(() => { });
-          } else {
-            entry.target.pause();
-          }
-        });
-      }, { threshold: 0.1 });
-
-      gridVideos.forEach((video) => videoObserver.observe(video));
-
       const lightbox = document.getElementById('lightbox');
 
       if (lightbox) {
@@ -118,10 +112,8 @@
         const backdrop = lightbox.querySelector('.lightbox-backdrop');
 
         const open = (src, alt, isVideo) => {
-          gridVideos.forEach((video) => {
-            video.pause();
-            videoObserver.unobserve(video);
-          });
+          // Video di grid dipause supaya tidak ada dua yang berjalan sekaligus.
+          gridVideos.forEach((video) => video.pause());
 
           if (isVideo) {
             lightboxImg.style.display = 'none';
@@ -146,14 +138,7 @@
             lightboxVideo.src = '';
             lightboxImg.style.display = 'none';
             lightboxVideo.style.display = 'none';
-
-            gridVideos.forEach((video) => {
-              videoObserver.observe(video);
-              const rect = video.getBoundingClientRect();
-              if (rect.top < window.innerHeight && rect.bottom >= 0) {
-                video.play().catch(() => { });
-              }
-            });
+            gridVideos.forEach((video) => video.pause());
           }, 300);
         };
 
@@ -163,7 +148,11 @@
           item.addEventListener('click', () => {
             const media = item.querySelector('img, video');
             if (!media) return;
-            open(media.getAttribute('src'), media.getAttribute('alt'), media.tagName.toLowerCase() === 'video');
+            // Video grid belum punya src (baru diunduh saat diklik), jadi
+            // alamatnya diambil dari data-src.
+            const src = media.getAttribute('src') || media.dataset.src || '';
+            if (!src) return;
+            open(src, media.getAttribute('alt'), media.tagName.toLowerCase() === 'video');
           });
         });
 

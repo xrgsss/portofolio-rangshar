@@ -70,6 +70,10 @@ tombol **Simpan perubahan** sendiri.
 Unggah gambar/video: gunakan tombol **Unggah** (berkas baru) atau **Pilih**
 (memakai gambar yang sudah ada di website).
 
+Video di halaman galeri **baru diunduh saat pengunjung menekannya**, bukan saat
+halaman dibuka. Tujuannya menghemat kuota transfer Blob — satu berkas video bisa
+puluhan MB, dan tanpa aturan ini setiap kunjungan langsung menarik semuanya.
+
 **Grafik pengunjung** ada di menu **Dashboard**. Isinya jumlah tampilan halaman
 publik (`/` dan `portfolio-*.html`) per jam untuk 24 jam terakhir, ditambah
 angka **Total kunjungan**, **Hari ini**, dan **Jam ini**. Grafiknya menyegarkan
@@ -95,12 +99,43 @@ Catatan:
   mengunci akun sendiri selama 15 menit. Bila ingin mengaktifkannya lagi, isi
   `LOGIN_RATE_LIMIT=on` (5 percobaan gagal per 15 menit → dikunci 15 menit;
   penghitungnya di Redis sehingga berlaku untuk semua instance).
+- Password yang diganti dari dashboard hanya berlaku **di lingkungan tempat
+  penggantian itu dilakukan**: di Vercel tersimpan di Redis, saat lokal
+  tersimpan di `.env`. Jadi mengganti password di localhost **tidak** mengubah
+  password di Vercel (dan sebaliknya).
 - Halaman `/admin` ber-**noindex**, dilarang di `robots.txt`, dan tidak ada tautan menuju dashboard dari website publik.
 - Berkas sensitif (`.env`, `server.js`, `data/*.json`, folder `lib/`) tidak pernah dilayani sebagai file publik.
 - Unggahan berkas dibatasi jenis (gambar/video) dan ukuran (40 MB); penghapusan berkas hanya berlaku untuk berkas hasil unggahan, media lama tidak bisa terhapus dari dashboard.
 - URL berbahaya (`javascript:`, `data:`) otomatis ditolak saat menyimpan data.
 
 > Penting: jangan pernah meng-commit file `.env` (sudah ada di `.gitignore`).
+
+### Kalau login produksi menolak password yang benar
+
+Tandanya: di localhost bisa, di Vercel muncul `Username atau password salah.`
+(sesi dan cookie sehat — memang kredensialnya yang berbeda). Urutan pemeriksaan:
+
+1. Samakan sumbernya. Pilih salah satu:
+   - ganti password dari dashboard **LIVE** (Vercel), atau
+   - isi environment variable `ADMIN_PASSWORD_HASH` di Vercel dengan nilai
+     `ADMIN_PASSWORD_HASH` dari `.env` lokal, lalu **redeploy**
+     (perubahan environment variable baru berlaku setelah deploy ulang).
+
+   Menyalin hash dari `.env` lokal ke clipboard:
+   ```powershell
+   node -e "require('./lib/env').loadEnvFiles(); process.stdout.write(process.env.ADMIN_PASSWORD_HASH)" | Set-Clipboard
+   ```
+
+2. Kalau masih ditolak, berarti Redis masih menyimpan hash lama — dan hash di
+   Redis selalu menang atas environment variable. Periksa dan bereskan:
+   ```bash
+   npm run reset:password -- --url "rediss://..." --dry
+   npm run reset:password -- --url "rediss://..." --clear
+   npm run reset:password -- --url "rediss://..." --set "PasswordBaru123"
+   ```
+   Alamat Redis ada di Vercel → **Storage** → store Redis → tab **Connect**.
+   Perintah itu hanya menyentuh key `portfolio:admin:hash`; isi website
+   (`portfolio:content`, `portfolio:galleries`) tidak diubah.
 
 ---
 
@@ -146,6 +181,8 @@ scripts/
   hash-password.mjs    Buat hash bcrypt manual
   migrate-media.mjs    Pindahkan images/ -> Vercel Blob + perbarui data
   migrate-kv.mjs       Kirim data/*.json -> Redis
+  optimize-media.mjs   Kecilkan video & gambar -> Blob + perbarui data
+  reset-password.mjs   Periksa/ganti password admin di Redis produksi
 
 images/                Gambar & video lokal (tidak ikut ke Vercel)
   uploads/             Berkas hasil unggahan saat versi lokal
@@ -348,8 +385,25 @@ terbaca (di situlah letak masalah kalau store belum terhubung ke Development).
   **Akun & Keamanan → Unduh backup (JSON)**, dan simpan salinannya.
 - Ganti password dari dashboard disimpan di Redis, jadi berlaku untuk semua
   instance.
-- Setiap store di Vercel punya kuota gratis. Setelah media dipindahkan,
-  perhatikan pemakaian bandwidth bila video berukuran besar.
+- Setiap store di Vercel punya kuota gratis. **Halaman galeri cukup berat**:
+  saat diukur, halaman *3D Design* menarik ~302 MB sekali dibuka (227 MB di
+  antaranya video) dan seluruh halaman ~372 MB. Kuota Data Transfer Hobby
+  (10 GB/bulan) karena itu bisa habis hanya setelah ~27 kali seluruh halaman
+  dibuka, atau ~33 kali halaman 3D Design saja.
+- **Bila kuota habis**, store otomatis diblokir. Gejalanya: gambar *lama* masih
+  tampil (masih tersimpan di cache browser) tapi gambar *baru* tampil sebagai
+  teks `alt`-nya. Kalau URL Blob dibuka langsung, jawabannya
+  `403 Your store is blocked`. Buktikan dengan membuka
+  <https://vercel.com/dashboard/storage> dan lihat status store-nya
+  (Vercel menjelaskan alasannya di situ, termasuk bila karena limit bulanan
+  yang akan pulih sendiri di awal siklus). Selama store diblokir, dashboard
+  masih bisa membaca daftar berkas, tetapi website tidak bisa menampilkannya.
+  **Tidak ada berkas yang perlu diunggah ulang** — setelah pulih, alamat yang
+  sama langsung bekerja lagi.
+- Supaya tidak terulang, kecilkan media: `npm run optimize:media -- --dry`
+  untuk melihat rencananya, lalu `npm run optimize:media` untuk memproses
+  (butuh `ffmpeg`). Skrip ini mengompres video dan mengubah PNG besar menjadi
+  WebP — pada situs ini total ~376 MB berpotensi turun menjadi ~56 MB.
 - Saat menambah media baru, cukup unggah dari dashboard — berkas otomatis masuk
   ke Blob.
 
@@ -387,6 +441,8 @@ node server.js
 | `npm run seed` | Ekstrak ulang isi dari HTML lama ke `data/*.json` |
 | `npm run migrate:media [-- --dry]` | Pindahkan `images/` ke Vercel Blob dan perbarui data |
 | `npm run migrate:kv` | Kirim `data/*.json` ke Redis |
+| `npm run optimize:media [-- --dry]` | Kecilkan video & gambar, unggah ke Blob, perbarui data (butuh `ffmpeg`) |
+| `npm run reset:password -- --url "..." [--dry\|--clear\|--set "PasswordBaru"]` | Periksa / bereskan password admin di Redis produksi |
 
 `npm run seed` tidak menimpa data yang ada kecuali dijalankan dengan
 `npm run seed -- --force` — gunakan hanya bila ingin mengembalikan isi website

@@ -897,6 +897,39 @@ section {
   opacity: 1;
 }
 
+/* Video: tidak diunduh sampai diklik, jadi grid menampilkan latar gelap
+   dengan tombol putar sebagai penanda. */
+.gallery-item video:not([src]) {
+  background: #14161f;
+}
+
+.gallery-item.is-video::before {
+  content: '▶';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  padding-left: 4px;
+  border-radius: 50%;
+  background: rgba(12, 14, 22, 0.62);
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  color: #fff;
+  font-size: 19px;
+  line-height: 1;
+  pointer-events: none;
+  z-index: 2;
+  transition: transform 200ms ease, background 200ms ease;
+}
+
+.gallery-item.is-video:hover::before {
+  transform: translate(-50%, -50%) scale(1.1);
+  background: rgba(109, 75, 255, 0.85);
+}
+
 .lightbox {
   position: fixed;
   inset: 0;
