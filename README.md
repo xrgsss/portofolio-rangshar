@@ -423,13 +423,17 @@ terbaca (di situlah letak masalah kalau store belum terhubung ke Development).
 
 ### 6a. Menaruh media di host lain (kalau Blob bermasalah)
 
-> **Kondisi sekarang (19 Okt 2026):** store Blob diblokir karena kuota, jadi
+> **Kondisi sekarang (20 Okt 2026):** store Blob diblokir karena kuota, jadi
 > media website disajikan dari **GitHub Pages**:
 > <https://xrgsss.github.io/portfolio-media> (repo publik
-> `xrgsss/portfolio-media`, 74 berkas, 40 MB). Dashboard tetap memakai Blob
-> untuk unggahan baru. Dua unggahan lama belum punya salinan lokal sehingga
-> masih 403 dan tampil sebagai placeholder sampai blokirnya berakhir
-> (18 Nov 2026).
+> `xrgsss/portfolio-media`, 76 berkas, 40,3 MB). Semua 76 alamat media di
+> `data/*.json` sudah menunjuk ke sana — **tidak ada lagi yang bergantung pada
+> store lama**. Dua unggahan yang tadinya cuma ada di store itu sudah dibuat
+> ulang dari berkas aslinya.
+>
+> Dashboard **tetap** mengunggah media baru ke Vercel Blob. Selama store masih
+> diblokir, unggahan baru akan tersimpan tetapi belum bisa dibaca (tampil
+> sebagai placeholder) sampai blokirnya berakhir **18 Nov 2026**.
 
 Kalau store diblokir atau kuotanya kurang, media bisa ditaruh di host statis
 mana pun (GitHub Pages, Cloudflare Pages, VPS, dsb.). Dua langkah:
