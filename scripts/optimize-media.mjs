@@ -428,14 +428,38 @@ if (salin.length > 0) {
 
 if (OUT_ROOT) {
   const manifestFile = path.join(ROOT, 'data', 'media-manifest.json');
+
+  // Gabungkan dengan catatan sebelumnya, supaya menjalankan skrip untuk
+  // beberapa berkas saja (mis. --only uploads) tidak menghapus yang lain.
+  const sebelumnya = [];
+  if (fs.existsSync(manifestFile)) {
+    try {
+      const lama = JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
+      if (Array.isArray(lama.entries)) sebelumnya.push(...lama.entries);
+    } catch {
+      console.log('\n⚠  Catatan pemetaan lama tidak bisa dibaca, akan ditulis ulang.');
+    }
+  }
+
+  const gabungan = new Map();
+  for (const item of sebelumnya) if (item && item.pathname) gabungan.set(item.pathname, item);
+  for (const item of entries) gabungan.set(item.pathname, item);
+
+  const semuaEntri = [...gabungan.values()];
   const manifest = {
     generatedAt: new Date().toISOString(),
     outDir: path.relative(ROOT, OUT_ROOT).split(path.sep).join('/'),
-    total: entries.length,
-    entries,
+    total: semuaEntri.length,
+    entries: semuaEntri,
   };
   fs.writeFileSync(manifestFile, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
-  console.log(`\n✔  Catatan pemetaan: data/${path.basename(manifestFile)} (${entries.length} berkas)`);
+
+  const baru = semuaEntri.length - sebelumnya.length;
+  console.log(
+    `\n✔  Catatan pemetaan: data/${path.basename(manifestFile)} (${semuaEntri.length} berkas` +
+      (baru > 0 ? `, ${baru} baru` : '') +
+      ')'
+  );
 }
 
 /* --------------------------------------------------------------- simpan -- */
