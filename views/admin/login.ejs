@@ -50,7 +50,8 @@
       </form>
 
       <p class="login-foot">
-        Halaman ini hanya untuk pemilik website. Semua percobaan login dicatat dan dibatasi.
+        Halaman ini hanya untuk pemilik website.
+        <% if (rateLimit) { %>Percobaan login yang gagal dibatasi otomatis.<% } %>
       </p>
     </div>
   </div>

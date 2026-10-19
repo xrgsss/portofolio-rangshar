@@ -39,6 +39,7 @@
     dirty: false,
     stats: null,
     visits: null,
+    security: null,
     account: null,
   };
 
@@ -951,7 +952,13 @@
         </div>
         <ul class="small muted" style="margin:0;padding-left:18px">
           <li>Login dilindungi bcrypt, cookie HttpOnly, dan token CSRF.</li>
-          <li>Maksimal 5 percobaan login gagal per 15 menit, lalu dikunci sementara.</li>
+          <li>${
+            state.security && state.security.rateLimitEnabled
+              ? `Maksimal ${escapeHtml(state.security.maxAttempts)} percobaan login gagal per ${
+                  state.security.blockMinutes
+                } menit, lalu dikunci sementara.`
+              : 'Pembatasan percobaan login dimatikan (LOGIN_RATE_LIMIT tidak diset).'
+          }</li>
           <li>Folder dashboard tidak diindeks mesin pencari (noindex) dan tidak terdaftar di robots.txt.</li>
           <li>
             Password terakhir diubah:
@@ -1522,6 +1529,7 @@
     csrfToken = session.csrfToken || csrfToken;
     state.account = session.account;
     state.stats = session.stats;
+    state.security = session.security || null;
     state.content = content.content;
     state.galleries = galleries.galleries;
     state.activeGallery = Object.keys(state.galleries)[0] || null;

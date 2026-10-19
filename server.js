@@ -142,7 +142,13 @@ const findGalleryByFile = async (fileName) => {
 };
 
 const renderLoginPage = (res, { error = '', notice = '', status = 200, next = '' } = {}) =>
-  res.status(status).render('admin/login', { error, notice, next, siteTitle: 'Admin Dashboard' });
+  res.status(status).render('admin/login', {
+    error,
+    notice,
+    next,
+    rateLimit: auth.isRateLimitEnabled(),
+    siteTitle: 'Admin Dashboard',
+  });
 
 /* =================================================== HALAMAN PUBLIK ==== */
 
@@ -208,15 +214,19 @@ app.post(
     const nextParam = typeof req.body.next === 'string' ? req.body.next : '';
     const safeNext = nextParam.startsWith('/admin') ? nextParam : '/admin';
 
+    // Penguncian hanya dijalankan kalau LOGIN_RATE_LIMIT=on.
+    const rateLimit = auth.isRateLimitEnabled();
     const rateKey = `login:${req.ip}`;
-    const limit = await auth.checkRateLimit(rateKey);
 
-    if (limit.blocked) {
-      return renderLoginPage(res, {
-        status: 429,
-        next: safeNext,
-        error: `Terlalu banyak percobaan gagal. Coba lagi dalam ${Math.ceil(limit.retryAfterSeconds / 60)} menit.`,
-      });
+    if (rateLimit) {
+      const limit = await auth.checkRateLimit(rateKey);
+      if (limit.blocked) {
+        return renderLoginPage(res, {
+          status: 429,
+          next: safeNext,
+          error: `Terlalu banyak percobaan gagal. Coba lagi dalam ${Math.ceil(limit.retryAfterSeconds / 60)} menit.`,
+        });
+      }
     }
 
     const username = req.body.username;
@@ -234,19 +244,20 @@ app.post(
     }
 
     if (!ok) {
-      const after = await auth.recordFailure(rateKey);
-      const remaining = after.remaining;
-      return renderLoginPage(res, {
-        status: 401,
-        next: safeNext,
-        error:
-          remaining > 0
-            ? `Username atau password salah. Sisa percobaan: ${remaining}.`
-            : 'Terlalu banyak percobaan gagal. Akun dikunci sementara selama 15 menit.',
-      });
+      let message = 'Username atau password salah.';
+
+      if (rateLimit) {
+        const after = await auth.recordFailure(rateKey);
+        message =
+          after.remaining > 0
+            ? `Username atau password salah. Sisa percobaan: ${after.remaining}.`
+            : 'Terlalu banyak percobaan gagal. Akun dikunci sementara selama 15 menit.';
+      }
+
+      return renderLoginPage(res, { status: 401, next: safeNext, error: message });
     }
 
-    await auth.clearFailures(rateKey);
+    if (rateLimit) await auth.clearFailures(rateKey);
     await auth.login(req, String(username).trim());
     return res.redirect(safeNext);
   })
@@ -307,6 +318,11 @@ api.get(
         data: store.isRemote() ? `redis (${redis.transportName()})` : 'file-lokal',
         media: media.isConfigured() ? 'vercel-blob' : 'folder-lokal (images/)',
         rateLimit: redis.isConfigured() ? `redis (${redis.transportName()})` : 'memori',
+      },
+      security: {
+        rateLimitEnabled: auth.isRateLimitEnabled(),
+        maxAttempts: 5,
+        blockMinutes: 15,
       },
     });
   })

@@ -91,7 +91,10 @@ Catatan:
 - Password disimpan **hanya sebagai hash bcrypt** (12 rounds), tidak pernah sebagai teks biasa.
 - Sesi disimpan di **cookie `HttpOnly` + `SameSite=Lax`** yang ditandatangani, jadi tidak bisa dibaca maupun dipalsukan JavaScript.
 - Semua permintaan yang mengubah data wajib membawa **token CSRF**.
-- **Rate limit**: 5 percobaan login gagal per 15 menit → dikunci 15 menit. Penghitungnya disimpan di Redis, jadi tetap berlaku walau aplikasi berjalan di beberapa instance sekaligus.
+- **Penguncian login dimatikan secara default**, supaya salah ketik password tidak
+  mengunci akun sendiri selama 15 menit. Bila ingin mengaktifkannya lagi, isi
+  `LOGIN_RATE_LIMIT=on` (5 percobaan gagal per 15 menit → dikunci 15 menit;
+  penghitungnya di Redis sehingga berlaku untuk semua instance).
 - Halaman `/admin` ber-**noindex**, dilarang di `robots.txt`, dan tidak ada tautan menuju dashboard dari website publik.
 - Berkas sensitif (`.env`, `server.js`, `data/*.json`, folder `lib/`) tidak pernah dilayani sebagai file publik.
 - Unggahan berkas dibatasi jenis (gambar/video) dan ukuran (40 MB); penghapusan berkas hanya berlaku untuk berkas hasil unggahan, media lama tidak bisa terhapus dari dashboard.
@@ -257,6 +260,7 @@ Project → **Settings → Environment Variables**:
 | `ADMIN_USER` | mis. `admin` |
 | `ADMIN_PASSWORD_HASH` | hasil `npm run hash "PasswordKamu123"` |
 | `ADMIN_DISPLAY_NAME` | opsional, mis. `Administrator` |
+| `LOGIN_RATE_LIMIT` | opsional. Kosong/`off` = penguncian mati (default). `on` = aktifkan |
 
 Kredensial Redis dan Blob tidak perlu diisi manual — Vercel menambahkannya
 sendiri saat store dihubungkan.
