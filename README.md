@@ -423,6 +423,14 @@ terbaca (di situlah letak masalah kalau store belum terhubung ke Development).
 
 ### 6a. Menaruh media di host lain (kalau Blob bermasalah)
 
+> **Kondisi sekarang (19 Okt 2026):** store Blob diblokir karena kuota, jadi
+> media website disajikan dari **GitHub Pages**:
+> <https://xrgsss.github.io/portfolio-media> (repo publik
+> `xrgsss/portfolio-media`, 74 berkas, 40 MB). Dashboard tetap memakai Blob
+> untuk unggahan baru. Dua unggahan lama belum punya salinan lokal sehingga
+> masih 403 dan tampil sebagai placeholder sampai blokirnya berakhir
+> (18 Nov 2026).
+
 Kalau store diblokir atau kuotanya kurang, media bisa ditaruh di host statis
 mana pun (GitHub Pages, Cloudflare Pages, VPS, dsb.). Dua langkah:
 
