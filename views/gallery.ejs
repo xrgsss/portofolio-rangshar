@@ -102,6 +102,39 @@
         img.decoding = 'async';
       });
 
+      /**
+       * Kalau gambar gagal diunduh (mis. penyimpanan media sedang bermasalah),
+       * tampilkan penanda yang rapi. Tanpa ini, browser menampilkan ikon gambar
+       * rusak + teks `alt` yang panjang, dan kotak galerinya menciut.
+       */
+      const FALLBACK_ICON =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" ' +
+        'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<rect x="3" y="4" width="18" height="16" rx="2"></rect>' +
+        '<circle cx="8.5" cy="9.5" r="1.5"></circle>' +
+        '<path d="m21 15-5-5L5 20"></path></svg>';
+
+      const markFailed = (img) => {
+        const item = img.closest('.gallery-item');
+        if (!item || item.classList.contains('is-media-failed')) return;
+
+        item.classList.add('is-media-failed');
+
+        const fallback = document.createElement('div');
+        fallback.className = 'media-fallback';
+        fallback.setAttribute('role', 'img');
+        fallback.setAttribute('aria-label', 'Gambar belum bisa dimuat');
+        fallback.innerHTML = `${FALLBACK_ICON}<p>Gambar belum bisa dimuat</p>`;
+
+        item.appendChild(fallback);
+      };
+
+      document.querySelectorAll('.gallery-item img').forEach((img) => {
+        img.addEventListener('error', () => markFailed(img));
+        // Gambar yang gagal sebelum skrip ini sempat berjalan.
+        if (img.complete && img.naturalWidth === 0) markFailed(img);
+      });
+
       const gridVideos = document.querySelectorAll('.gallery-grid video');
       const lightbox = document.getElementById('lightbox');
 
@@ -146,6 +179,9 @@
         document.querySelectorAll('.gallery-item').forEach((item) => {
           if (item.tagName.toLowerCase() === 'a') return;
           item.addEventListener('click', () => {
+            // Gambar yang gagal dimuat tidak perlu dibuka di lightbox.
+            if (item.classList.contains('is-media-failed')) return;
+
             const media = item.querySelector('img, video');
             if (!media) return;
             // Video grid belum punya src (baru diunduh saat diklik), jadi

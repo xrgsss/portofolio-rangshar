@@ -24,6 +24,11 @@
  *       Tulis hash baru ke Redis. Password itu langsung berlaku (tanpa
  *       redeploy), dan menang atas environment variable.
  *
+ *   npm run reset:password -- --url "rediss://..." --from-local
+ *       Salin hash dari ADMIN_PASSWORD_HASH di .env laptop ini ke Redis.
+ *       Hasilnya: password yang dipakai di localhost berlaku juga di produksi
+ *       (tanpa redeploy, dan tanpa perlu menulis password di terminal ini).
+ *
  * Kredensial lain juga bisa:
  *   --rest-url "https://xxx.upstash.io" --rest-token "AXxx..."
  *
@@ -59,7 +64,8 @@ const restUrl = valueOf('rest-url');
 const restToken = valueOf('rest-token');
 const newPassword = valueOf('set');
 const clearMode = hasFlag('clear');
-const dryMode = hasFlag('dry') || (!clearMode && !newPassword);
+const fromLocal = hasFlag('from-local');
+const dryMode = hasFlag('dry') || (!clearMode && !newPassword && !fromLocal);
 
 if (hasFlag('help') || args.includes('-h')) {
   console.log(fs.readFileSync(fileURLToPath(import.meta.url), 'utf8').split('*/')[0].replace(/^\/\*\*?/, '').trim());
@@ -78,8 +84,8 @@ const bcrypt = bcryptModule.default || bcryptModule;
 
 const HASH_KEY = 'portfolio:admin:hash';
 
-/** Key lain yang wajib ada, hanya untuk memastikan datanya tidak tersentuh. */
-const DATA_KEYS = ['portfolio:content', 'portfolio:galleries', 'portfolio:analytics:views'];
+/** Key data yang dilaporkan, hanya untuk memastikan datanya tidak tersentuh. */
+const DATA_KEYS = ['portfolio:content', 'portfolio:galleries', 'portfolio:pv:total'];
 
 const fingerprint = (value) =>
   typeof value === 'string' && value.length >= 13 ? `$2a$12$…salt=${value.slice(7, 13)}… (${value.length} karakter)` : '(bukan hash yang sah)';
@@ -108,20 +114,36 @@ if (!isConfigured()) {
 }
 
 console.log(`\nTransport Redis : ${transportName()}`);
-console.log(`Mode            : ${dryMode ? 'PERIKSA SAJA (tidak mengubah apa pun)' : clearMode ? 'HAPUS hash admin' : 'TULIS hash baru'}`);
+console.log(
+  `Mode            : ${
+    dryMode
+      ? 'PERIKSA SAJA (tidak mengubah apa pun)'
+      : clearMode
+        ? 'HAPUS hash admin'
+        : fromLocal
+          ? 'SALIN hash dari .env laptop'
+          : 'TULIS hash baru'
+  }`
+);
 console.log('─'.repeat(74));
 
 const report = async () => {
   // 1. Data website: hanya cek ada/tidak, isinya tidak dibaca.
-  console.log('\nData website (tidak akan diubah):');
+  console.log('\nKey data (tidak akan diubah):');
+  const missing = [];
   for (const key of DATA_KEYS) {
     try {
       const value = await withTimeout(getJson(key), 15000, `Pembacaan ${key}`);
       const info = value === null ? '— belum ada' : `ada (${Array.isArray(value) ? `${value.length} entri` : typeof value})`;
+      if (value === null) missing.push(key);
       console.log(`  ${key.padEnd(32)} ${info}`);
     } catch (error) {
       console.log(`  ${key.padEnd(32)} ⚠ ${error.message}`);
     }
+  }
+  if (missing.includes('portfolio:content')) {
+    console.log('  Catatan: karena portfolio:content belum ada, website memakai data awal dari');
+    console.log('           data/*.json yang ikut ter-deploy (data diubah lewat git push).');
   }
 
   // 2. Hash admin.
@@ -169,6 +191,21 @@ const main = async () => {
     console.log(`\n✔  Password produksi diganti (${fingerprint(hash)}).`);
     console.log('   Langsung berlaku di rangshar.my.id — tidak perlu redeploy.');
     console.log('   Kalau nanti diganti lagi dari dashboard, isi Redis ini yang diperbarui.');
+  }
+
+  if (fromLocal) {
+    const localHash = String(process.env.ADMIN_PASSWORD_HASH || '').trim();
+
+    if (!isValidHash(localHash)) {
+      console.log('\n✖  ADMIN_PASSWORD_HASH tidak ada / tidak sah di .env laptop ini.');
+      console.log('   Isi dulu password di laptop (dashboard -> Akun & Keamanan), lalu ulangi.');
+      process.exit(1);
+    }
+
+    await withTimeout(setJson(HASH_KEY, localHash), 15000, `Penulisan ${HASH_KEY}`);
+    console.log(`\n✔  Hash dari laptop disalin ke Redis (${fingerprint(localHash)}).`);
+    console.log('   Password yang Anda pakai di localhost sekarang berlaku juga di rangshar.my.id.');
+    console.log('   Langsung berlaku — tidak perlu redeploy.');
   }
 
   console.log('');

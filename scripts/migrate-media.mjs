@@ -11,6 +11,13 @@
  * Script ini AMAN dijalankan berulang kali: berkas yang sudah ada di Blob
  * dilewati (tidak diunggah ulang).
  *
+ * Bisa dipakai dua situasi:
+ *   a. Media masih berupa path lokal (images/...) -> diunggah lalu alamatnya
+ *      ditulis dengan alamat Blob.
+ *   b. Media sudah berupa alamat Blob, tapi store-nya diganti -> alamat lama
+ *      dikenali dari pathname-nya (mis. `images/portofolio/3d/0213.mp4`)
+ *      sehingga diarahkan ke alamat store yang baru.
+ *
  * Sebelum menjalankan:
  *   1. Buat Blob store di Vercel dengan akses PUBLIC, hubungkan ke project.
  *   2. Jalankan `npx vercel env pull` (menulis .env.local).
@@ -94,7 +101,18 @@ const fullyEncodedPath = (relative) =>
     )
     .join('/');
 
-/** Ganti semua string di dalam JSON yang isinya alamat media lokal. */
+/** Ambil pathname dari alamat Blob mana pun (mis. "images/a/b.png", "uploads/c.png"). */
+const pathnameFromBlobUrl = (value) => {
+  try {
+    const url = new URL(value);
+    if (!/\.blob\.vercel-storage\.com$/i.test(url.hostname)) return '';
+    return decodeURIComponent(url.pathname).replace(/^\/+/, '');
+  } catch {
+    return '';
+  }
+};
+
+/** Ganti semua string di dalam JSON yang isinya alamat media (lokal maupun Blob lama). */
 const rewriteUrls = (value, map) => {
   let replaced = 0;
 
@@ -108,6 +126,15 @@ const rewriteUrls = (value, map) => {
           return url;
         }
       }
+
+      // Alamat Blob store lama: dicocokkan lewat pathname-nya, jadi berkas yang
+      // sama tetap terarah ke store yang baru walaupun host-nya sudah berbeda.
+      const pathname = pathnameFromBlobUrl(node);
+      if (pathname && map.has(pathname)) {
+        replaced += 1;
+        return map.get(pathname);
+      }
+
       return node;
     }
 
@@ -194,6 +221,10 @@ const main = async () => {
     map.set(relative, url);
     map.set(encodeURI(relative).replace(/#/g, '%23'), url);
     map.set(fullyEncodedPath(relative).replace(/#/g, '%23'), url);
+    // Kunci tambahan berupa pathname di dalam store, supaya alamat Blob store
+    // lama (dengan host berbeda) juga bisa diarahkan ke alamat baru.
+    map.set(pathname, url);
+    map.set(encodeURI(pathname).replace(/#/g, '%23'), url);
   }
 
   console.log('─'.repeat(64));
