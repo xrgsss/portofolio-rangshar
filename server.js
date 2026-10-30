@@ -37,6 +37,9 @@ const IMAGES_DIR = path.join(ROOT, 'images');
 
 const app = express();
 
+// Percayai header reverse proxy (Vercel / Cloudflare) agar req.protocol terbaca 'https' dan req.ip akurat
+app.set('trust proxy', 1);
+
 app.disable('x-powered-by');
 app.set('view engine', 'ejs');
 app.set('views', path.join(ROOT, 'views'));
